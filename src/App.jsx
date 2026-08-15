@@ -12,8 +12,8 @@ import { API_URL, TOKEN_SYMBOL, NETWORK_LABEL, SUBSCRIPTION_TIERS } from "./conf
 import "./App.css";
 
 const FAQ_ITEMS = [
-  { q: "Какие ИИ доступны?", a: "Google Gemini 1.5 Flash и Llama 3.1 70B (через Groq) — переключаетесь между ними в чате одной кнопкой." },
-  { q: "Что если у выбранного ИИ кончится лимит?", a: "Сервер сам пробует запасного провайдера — вы просто получаете ответ, без ошибок." },
+  { q: "Какие ИИ доступны?", a: "Два ядра — CoreAI Fast и CoreAI Pro. Переключаетесь между ними в чате одной кнопкой." },
+  { q: "Что если у выбранного ядра кончится лимит?", a: "Сервер сам пробует запасное ядро — вы просто получаете ответ, без ошибок." },
   { q: "Нужен ли MetaMask?", a: "Нет. Просто переведите USDT с любого кошелька (Trust Wallet, биржа и т.п.) на показанный адрес." },
   { q: "Как быстро активируется подписка?", a: "Обычно в течение 30–60 секунд после перевода — сервер проверяет блокчейн каждые полминуты." },
   { q: "Что будет, если отправить не ту сумму?", a: "Сумма сверяется с допуском ±1 USDT. Если сильно отличается — платёж не будет засчитан, напишите в поддержку." },
@@ -197,19 +197,19 @@ function App() {
             <div className="hero-orb" aria-hidden="true">
               <span className="hero-orb-core"></span>
             </div>
-            <p className="hero-tagline">Два ИИ в одном чате — Gemini и Llama 3.1, с автопереключением при лимите</p>
+            <p className="hero-tagline">Два ИИ-ядра в одном чате — с автопереключением при лимите</p>
           </div>
 
           <div className="feature-grid">
             <div className="feature-tile">
               <span className="feature-num">01</span>
-              <h4>Два провайдера</h4>
-              <p>Gemini 1.5 Flash и Llama 3.1 70B в одном окне — переключайтесь одной кнопкой.</p>
+              <h4>Два ядра ИИ</h4>
+              <p>CoreAI Fast и CoreAI Pro в одном окне — переключайтесь одной кнопкой.</p>
             </div>
             <div className="feature-tile">
               <span className="feature-num">02</span>
               <h4>Авто-фолбэк</h4>
-              <p>Упёрлись в лимит одного провайдера — сервер сам подставит запасной.</p>
+              <p>Упёрлись в лимит одного ядра — сервер сам подставит запасное.</p>
             </div>
             <div className="feature-tile">
               <span className="feature-num">03</span>
@@ -327,10 +327,10 @@ function App() {
         <div className="page chat-container">
           <div className="ai-switcher">
             <button className={`ai-btn ${selectedAI === "gemini" ? "active" : ""}`} onClick={() => setSelectedAI("gemini")}>
-              Gemini
+              CoreAI Fast
             </button>
             <button className={`ai-btn ${selectedAI === "groq" ? "active" : ""}`} onClick={() => setSelectedAI("groq")}>
-              Llama 3.1
+              CoreAI Pro
             </button>
           </div>
 
@@ -375,7 +375,7 @@ function App() {
 
           {userData?.isActive && (
             <div className="chat-info">
-              Модель: {selectedAI === "gemini" ? "Gemini 1.5 Flash" : "Llama 3.1 70B"} | Осталось:{" "}
+              Ядро: {selectedAI === "gemini" ? "CoreAI Fast" : "CoreAI Pro"} | Осталось:{" "}
               {userData?.dailyRemaining ?? "—"} запросов
             </div>
           )}
