@@ -152,37 +152,46 @@ function App() {
     <div className="app">
       {/* HEADER */}
       <header className="header">
-        <div className="header-left">
+        <div className="bar-inner">
           <h1 className="header-logo">CoreAI Pool</h1>
-        </div>
-        <div className="header-right">
-          {userData?.walletAddress && (
-            <span className="wallet-badge" title="Кошелёк, с которого оплачена подписка">
-              {shortAddr(userData.walletAddress)}
-            </span>
-          )}
+          <div className="header-right">
+            {userData?.walletAddress && (
+              <span className="wallet-badge" title="Кошелёк, с которого оплачена подписка">
+                {shortAddr(userData.walletAddress)}
+              </span>
+            )}
+          </div>
         </div>
       </header>
 
       {/* НАВИГАЦИЯ */}
       <nav className="tabs">
-        <button className={`tab ${activeTab === "dashboard" ? "active" : ""}`} onClick={() => setActiveTab("dashboard")}>
-          Кабинет
-        </button>
-        <button className={`tab ${activeTab === "chat" ? "active" : ""}`} onClick={() => setActiveTab("chat")}>
-          ИИ Чат
-          {userData?.dailyRemaining !== undefined && <span className="tab-badge">{userData.dailyRemaining}</span>}
-        </button>
-        <button className={`tab ${activeTab === "subscribe" ? "active" : ""}`} onClick={() => setActiveTab("subscribe")}>
-          Подписка
-        </button>
+        <div className="bar-inner tabs-inner">
+          <button className={`tab ${activeTab === "dashboard" ? "active" : ""}`} onClick={() => setActiveTab("dashboard")}>
+            Кабинет
+          </button>
+          <button className={`tab ${activeTab === "chat" ? "active" : ""}`} onClick={() => setActiveTab("chat")}>
+            ИИ Чат
+            {userData?.dailyRemaining !== undefined && <span className="tab-badge">{userData.dailyRemaining}</span>}
+          </button>
+          <button className={`tab ${activeTab === "subscribe" ? "active" : ""}`} onClick={() => setActiveTab("subscribe")}>
+            Подписка
+          </button>
+        </div>
       </nav>
 
       {error && <div className="error-msg">{error}</div>}
 
       {/* ПАНЕЛЬ УПРАВЛЕНИЯ */}
       {activeTab === "dashboard" && (
-        <div className="dashboard">
+        <div className="page dashboard">
+          <div className="hero">
+            <div className="hero-orb" aria-hidden="true">
+              <span className="hero-orb-core"></span>
+            </div>
+            <p className="hero-tagline">Два ИИ в одном чате — Gemini и Llama 3.1, с автопереключением при лимите</p>
+          </div>
+
           <div className="card">
             <h3>Ваша подписка</h3>
             {userData?.isActive ? (
@@ -257,7 +266,7 @@ function App() {
 
       {/* ЧАТ С ИИ */}
       {activeTab === "chat" && (
-        <div className="chat-container">
+        <div className="page chat-container">
           <div className="ai-switcher">
             <button className={`ai-btn ${selectedAI === "gemini" ? "active" : ""}`} onClick={() => setSelectedAI("gemini")}>
               Gemini
@@ -317,7 +326,7 @@ function App() {
 
       {/* ПОДПИСКА */}
       {activeTab === "subscribe" && (
-        <div className="subscribe-container">
+        <div className="page subscribe-container">
           <div className="card">
             <h2>Выберите тариф</h2>
             <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 16 }}>
