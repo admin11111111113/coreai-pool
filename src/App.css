@@ -128,34 +128,6 @@ body::after {
   gap: 18px;
 }
 
-.hero-orb {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: conic-gradient(from 0deg, var(--accent), var(--accent2), #a78bfa, var(--accent));
-  animation: spin 6s linear infinite;
-  box-shadow: 0 0 40px rgba(34, 211, 238, 0.35);
-}
-
-.hero-orb-core {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #16233f, var(--bg-primary) 70%);
-  box-shadow: inset 0 0 20px rgba(34, 211, 238, 0.25);
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-orb { animation: none; }
-}
-
 .hero-tagline {
   font-family: "Space Grotesk", "Inter", sans-serif;
   font-size: 19px;
@@ -163,6 +135,58 @@ body::after {
   line-height: 1.4;
   max-width: 420px;
   color: var(--text-primary);
+}
+
+.hero-compact {
+  padding: 24px 20px 4px;
+  gap: 0;
+}
+
+/* ═══════ SHOWCASE (пример диалога) ═══════ */
+
+.showcase {
+  padding: 28px 16px 4px;
+}
+
+@media (min-width: 720px) {
+  .showcase {
+    padding: 28px 20px 4px;
+  }
+}
+
+.showcase-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.showcase-msg {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.showcase-msg.user {
+  align-self: flex-end;
+  background: linear-gradient(120deg, var(--accent), var(--accent2));
+  color: #04101f;
+  font-weight: 500;
+  border-bottom-right-radius: 4px;
+}
+
+.showcase-msg.ai {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  color: var(--text-secondary);
 }
 
 /* ═══════ HEADER ═══════ */
@@ -580,11 +604,24 @@ body::after {
 
 /* ═══════ CHAT ═══════ */
 
-.chat-container {
-  flex: 1;
+.chat-panel {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 130px);
+  height: 480px;
+  margin: 8px 16px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+}
+
+@media (min-width: 720px) {
+  .chat-panel {
+    margin: 8px 20px 0;
+    height: 560px;
+  }
 }
 
 .chat-messages {

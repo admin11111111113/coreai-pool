@@ -45,7 +45,7 @@ function App() {
   const [selectedAI, setSelectedAI] = useState("gemini");
   const chatEndRef = useRef(null);
 
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("chat");
   const [error, setError] = useState("");
 
   // ==================== ЗАГРУЗКА ДАННЫХ СЕССИИ ====================
@@ -175,29 +175,90 @@ function App() {
       {/* НАВИГАЦИЯ */}
       <nav className="tabs">
         <div className="bar-inner tabs-inner">
-          <button className={`tab ${activeTab === "dashboard" ? "active" : ""}`} onClick={() => setActiveTab("dashboard")}>
-            Кабинет
-          </button>
           <button className={`tab ${activeTab === "chat" ? "active" : ""}`} onClick={() => setActiveTab("chat")}>
-            ИИ Чат
+            Чат
             {userData?.dailyRemaining !== undefined && <span className="tab-badge">{userData.dailyRemaining}</span>}
           </button>
-          <button className={`tab ${activeTab === "subscribe" ? "active" : ""}`} onClick={() => setActiveTab("subscribe")}>
-            Подписка
+          <button className={`tab ${activeTab === "profile" ? "active" : ""}`} onClick={() => setActiveTab("profile")}>
+            Кабинет
           </button>
         </div>
       </nav>
 
       {error && <div className="error-msg">{error}</div>}
 
-      {/* ПАНЕЛЬ УПРАВЛЕНИЯ */}
-      {activeTab === "dashboard" && (
-        <div className="page dashboard">
-          <div className="hero">
-            <div className="hero-orb" aria-hidden="true">
-              <span className="hero-orb-core"></span>
-            </div>
+      {/* ЧАТ С ИИ — первый экран: сразу рабочая панель + материалы о продукте */}
+      {activeTab === "chat" && (
+        <div className="page">
+          <div className="hero hero-compact">
             <p className="hero-tagline">Два ИИ-ядра в одном чате — с автопереключением при лимите</p>
+          </div>
+
+          <div className="chat-panel">
+            <div className="ai-switcher">
+              <button className={`ai-btn ${selectedAI === "gemini" ? "active" : ""}`} onClick={() => setSelectedAI("gemini")}>
+                CoreAI Fast
+              </button>
+              <button className={`ai-btn ${selectedAI === "groq" ? "active" : ""}`} onClick={() => setSelectedAI("groq")}>
+                CoreAI Pro
+              </button>
+            </div>
+
+            <div className="chat-messages">
+              {messages.length === 0 && (
+                <div className="chat-empty">
+                  <p>Задайте вопрос ИИ-ассистенту CoreAI</p>
+                </div>
+              )}
+              {messages.map((msg, i) => (
+                <div key={i} className={`chat-msg ${msg.role}`}>
+                  <div className="msg-bubble">
+                    {msg.text}
+                    {msg.model && (
+                      <div className="msg-model">
+                        {msg.model}
+                        {msg.fallback && " (авто-переключение)"}
+                      </div>
+                    )}
+                    {msg.usage && <div className="msg-usage">Запросов: {msg.usage.used}/{msg.usage.limit}</div>}
+                  </div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            <form className="chat-input-form" onSubmit={handleSendMessage}>
+              <input
+                type="text"
+                className="chat-input"
+                placeholder="Напишите сообщение..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                disabled={isSending || !userData?.isActive}
+              />
+              <button type="submit" className="btn btn-primary" disabled={isSending || !chatInput.trim() || !userData?.isActive}>
+                {isSending ? "..." : "→"}
+              </button>
+            </form>
+
+            {!userData?.isActive && <div className="chat-blocked">Оформите подписку для доступа к ИИ — вкладка «Кабинет»</div>}
+
+            {userData?.isActive && (
+              <div className="chat-info">
+                Ядро: {selectedAI === "gemini" ? "CoreAI Fast" : "CoreAI Pro"} | Осталось:{" "}
+                {userData?.dailyRemaining ?? "—"} запросов
+              </div>
+            )}
+          </div>
+
+          <div className="showcase">
+            <h3 className="steps-title">Пример диалога</h3>
+            <div className="showcase-frame">
+              <div className="showcase-msg user">Сократи это письмо до трёх предложений</div>
+              <div className="showcase-msg ai">Готово. Смысл сохранён, тон — деловой. Прислать варианты покороче?</div>
+              <div className="showcase-msg user">Да, и переведи на английский</div>
+              <div className="showcase-msg ai">Вот английская версия + два варианта длины на выбор.</div>
+            </div>
           </div>
 
           <div className="feature-grid">
@@ -230,7 +291,7 @@ function App() {
                 <span className="step-dot">1</span>
                 <div>
                   <strong>Выберите тариф</strong>
-                  <p>На вкладке «Подписка» — от 5 до 49 USDT в зависимости от лимита запросов.</p>
+                  <p>На вкладке «Кабинет» — от 5 до 49 USDT в зависимости от лимита запросов.</p>
                 </div>
               </div>
               <div className="step">
@@ -249,7 +310,12 @@ function App() {
               </div>
             </div>
           </div>
+        </div>
+      )}
 
+      {/* КАБИНЕТ + ПОДПИСКА */}
+      {activeTab === "profile" && (
+        <div className="page">
           <div className="card">
             <h3>Ваша подписка</h3>
             {userData?.isActive ? (
@@ -260,10 +326,7 @@ function App() {
             ) : (
               <div className="status-inactive">
                 <span className="status-dot red"></span>
-                Неактивна
-                <button className="btn btn-primary btn-sm" onClick={() => setActiveTab("subscribe")}>
-                  Оформить
-                </button>
+                Неактивна — выберите тариф ниже
               </div>
             )}
           </div>
@@ -319,72 +382,7 @@ function App() {
               </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* ЧАТ С ИИ */}
-      {activeTab === "chat" && (
-        <div className="page chat-container">
-          <div className="ai-switcher">
-            <button className={`ai-btn ${selectedAI === "gemini" ? "active" : ""}`} onClick={() => setSelectedAI("gemini")}>
-              CoreAI Fast
-            </button>
-            <button className={`ai-btn ${selectedAI === "groq" ? "active" : ""}`} onClick={() => setSelectedAI("groq")}>
-              CoreAI Pro
-            </button>
-          </div>
-
-          <div className="chat-messages">
-            {messages.length === 0 && (
-              <div className="chat-empty">
-                <p>Задайте вопрос ИИ-ассистенту CoreAI</p>
-              </div>
-            )}
-            {messages.map((msg, i) => (
-              <div key={i} className={`chat-msg ${msg.role}`}>
-                <div className="msg-bubble">
-                  {msg.text}
-                  {msg.model && (
-                    <div className="msg-model">
-                      {msg.model}
-                      {msg.fallback && " (авто-переключение)"}
-                    </div>
-                  )}
-                  {msg.usage && <div className="msg-usage">Запросов: {msg.usage.used}/{msg.usage.limit}</div>}
-                </div>
-              </div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
-
-          <form className="chat-input-form" onSubmit={handleSendMessage}>
-            <input
-              type="text"
-              className="chat-input"
-              placeholder="Напишите сообщение..."
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              disabled={isSending || !userData?.isActive}
-            />
-            <button type="submit" className="btn btn-primary" disabled={isSending || !chatInput.trim() || !userData?.isActive}>
-              {isSending ? "..." : "→"}
-            </button>
-          </form>
-
-          {!userData?.isActive && <div className="chat-blocked">Оформите подписку для доступа к ИИ</div>}
-
-          {userData?.isActive && (
-            <div className="chat-info">
-              Ядро: {selectedAI === "gemini" ? "CoreAI Fast" : "CoreAI Pro"} | Осталось:{" "}
-              {userData?.dailyRemaining ?? "—"} запросов
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ПОДПИСКА */}
-      {activeTab === "subscribe" && (
-        <div className="page subscribe-container">
           <div className="section-heading">
             <h2>Тарифы</h2>
             <p>Все тарифы — на 30 дней, разница только в дневном лимите запросов к ИИ.</p>
