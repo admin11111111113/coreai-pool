@@ -11,6 +11,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { API_URL, TOKEN_SYMBOL, NETWORK_LABEL, SUBSCRIPTION_TIERS } from "./config.js";
 import "./App.css";
 
+const FAQ_ITEMS = [
+  { q: "Какие ИИ доступны?", a: "Google Gemini 1.5 Flash и Llama 3.1 70B (через Groq) — переключаетесь между ними в чате одной кнопкой." },
+  { q: "Что если у выбранного ИИ кончится лимит?", a: "Сервер сам пробует запасного провайдера — вы просто получаете ответ, без ошибок." },
+  { q: "Нужен ли MetaMask?", a: "Нет. Просто переведите USDT с любого кошелька (Trust Wallet, биржа и т.п.) на показанный адрес." },
+  { q: "Как быстро активируется подписка?", a: "Обычно в течение 30–60 секунд после перевода — сервер проверяет блокчейн каждые полминуты." },
+  { q: "Что будет, если отправить не ту сумму?", a: "Сумма сверяется с допуском ±1 USDT. Если сильно отличается — платёж не будет засчитан, напишите в поддержку." },
+];
+
 function getOrCreateSessionId() {
   let id = localStorage.getItem("coreai_session_id");
   if (!id) {
@@ -27,9 +35,9 @@ function App() {
   const [userData, setUserData] = useState(null);
   const [poolStats, setPoolStats] = useState(null);
 
-  const [selectedTier, setSelectedTier] = useState(1);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [pendingPayment, setPendingPayment] = useState(null);
+  const [openFaq, setOpenFaq] = useState(null);
 
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
@@ -66,14 +74,14 @@ function App() {
 
   // ==================== ПОКУПКА ПОДПИСКИ ====================
 
-  async function handleSubscribe() {
+  async function handleSubscribe(tierIndex) {
     setIsSubscribing(true);
     setError("");
     try {
       const res = await fetch(`${API_URL}/api/reserve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, tierIndex: selectedTier }),
+        body: JSON.stringify({ sessionId, tierIndex }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -190,6 +198,56 @@ function App() {
               <span className="hero-orb-core"></span>
             </div>
             <p className="hero-tagline">Два ИИ в одном чате — Gemini и Llama 3.1, с автопереключением при лимите</p>
+          </div>
+
+          <div className="feature-grid">
+            <div className="feature-tile">
+              <span className="feature-num">01</span>
+              <h4>Два провайдера</h4>
+              <p>Gemini 1.5 Flash и Llama 3.1 70B в одном окне — переключайтесь одной кнопкой.</p>
+            </div>
+            <div className="feature-tile">
+              <span className="feature-num">02</span>
+              <h4>Авто-фолбэк</h4>
+              <p>Упёрлись в лимит одного провайдера — сервер сам подставит запасной.</p>
+            </div>
+            <div className="feature-tile">
+              <span className="feature-num">03</span>
+              <h4>Без кошелька на сайте</h4>
+              <p>Перевод USDT на адрес — без MetaMask, без комиссий за подключение.</p>
+            </div>
+            <div className="feature-tile">
+              <span className="feature-num">04</span>
+              <h4>Цена по факту</h4>
+              <p>Тарифы посчитаны от реальной стоимости запросов к ИИ, без переплат.</p>
+            </div>
+          </div>
+
+          <div className="steps">
+            <h3 className="steps-title">Как это работает</h3>
+            <div className="steps-grid">
+              <div className="step">
+                <span className="step-dot">1</span>
+                <div>
+                  <strong>Выберите тариф</strong>
+                  <p>На вкладке «Подписка» — от 5 до 49 USDT в зависимости от лимита запросов.</p>
+                </div>
+              </div>
+              <div className="step">
+                <span className="step-dot">2</span>
+                <div>
+                  <strong>Переведите USDT</strong>
+                  <p>С любого кошелька на показанный адрес — точную сумму, сеть BSC (BEP-20).</p>
+                </div>
+              </div>
+              <div className="step">
+                <span className="step-dot">3</span>
+                <div>
+                  <strong>Подписка включится сама</strong>
+                  <p>Сервер находит платёж в блокчейне за ~30 секунд и открывает доступ на 30 дней.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="card">
@@ -327,62 +385,68 @@ function App() {
       {/* ПОДПИСКА */}
       {activeTab === "subscribe" && (
         <div className="page subscribe-container">
-          <div className="card">
-            <h2>Выберите тариф</h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 16 }}>
-              Передвиньте ползунок для выбора количества запросов к ИИ
-            </p>
+          <div className="section-heading">
+            <h2>Тарифы</h2>
+            <p>Все тарифы — на 30 дней, разница только в дневном лимите запросов к ИИ.</p>
+          </div>
 
-            <div className="slider-container">
-              <input
-                type="range"
-                min="0"
-                max={SUBSCRIPTION_TIERS.length - 1}
-                value={selectedTier}
-                onChange={(e) => setSelectedTier(parseInt(e.target.value))}
-                className="tier-slider"
-              />
-
-              <div className="tier-info">
-                <div className="tier-name">{SUBSCRIPTION_TIERS[selectedTier].label}</div>
-                <div className="tier-price">
-                  {SUBSCRIPTION_TIERS[selectedTier].amount} {TOKEN_SYMBOL}
-                  <span className="tier-period">/30 дней</span>
-                </div>
-                <div className="tier-requests">{SUBSCRIPTION_TIERS[selectedTier].requests}</div>
-              </div>
-            </div>
-
-            {!pendingPayment ? (
-              <button
-                className="btn btn-primary btn-large"
-                onClick={handleSubscribe}
-                disabled={isSubscribing}
-                style={{ width: "100%", margin: "16px 0 0" }}
-              >
-                {isSubscribing ? "Создаём счёт..." : `Оформить подписку за ${SUBSCRIPTION_TIERS[selectedTier].amount} ${TOKEN_SYMBOL}`}
-              </button>
-            ) : (
-              <div className="card" style={{ marginTop: 16 }}>
-                <h3>Оплата ожидается</h3>
-                <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
-                  Переведите ровно <strong>{pendingPayment.amount} {TOKEN_SYMBOL}</strong> ({NETWORK_LABEL}) на адрес:
-                </p>
-                <div className="ref-link-box">
-                  <input type="text" readOnly value={pendingPayment.receiverAddress} className="ref-link-input" />
-                  <button className="btn btn-primary" onClick={copyReceiverAddress}>
-                    Скопировать
+          {!pendingPayment ? (
+            <div className="pricing-grid">
+              {SUBSCRIPTION_TIERS.map((tier, i) => (
+                <div className={`pricing-card ${i === 1 ? "popular" : ""}`} key={tier.label}>
+                  {i === 1 && <div className="pricing-badge">Популярный</div>}
+                  <div className="tier-name">{tier.label}</div>
+                  <div className="tier-price">
+                    {tier.amount} {TOKEN_SYMBOL}
+                    <span className="tier-period">/30 дней</span>
+                  </div>
+                  <div className="tier-requests">{tier.requests}</div>
+                  <button
+                    className="btn btn-primary btn-large"
+                    onClick={() => handleSubscribe(i)}
+                    disabled={isSubscribing}
+                  >
+                    {isSubscribing ? "..." : "Выбрать"}
                   </button>
                 </div>
-                <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 12 }}>
-                  Как только платёж найдётся в блокчейне — подписка включится автоматически (проверяем каждые ~30 сек).
-                </p>
+              ))}
+            </div>
+          ) : (
+            <div className="card">
+              <h3>Оплата ожидается</h3>
+              <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+                Переведите ровно <strong>{pendingPayment.amount} {TOKEN_SYMBOL}</strong> ({NETWORK_LABEL}) на адрес:
+              </p>
+              <div className="ref-link-box">
+                <input type="text" readOnly value={pendingPayment.receiverAddress} className="ref-link-input" />
+                <button className="btn btn-primary" onClick={copyReceiverAddress}>
+                  Скопировать
+                </button>
               </div>
-            )}
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 12 }}>
+                Как только платёж найдётся в блокчейне — подписка включится автоматически (проверяем каждые ~30 сек).
+              </p>
+            </div>
+          )}
+
+          <div className="faq">
+            <h3 className="steps-title">Вопросы</h3>
+            {FAQ_ITEMS.map((item, i) => (
+              <div className={`faq-item ${openFaq === i ? "open" : ""}`} key={item.q}>
+                <button className="faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                  {item.q}
+                  <span className="faq-caret">⌄</span>
+                </button>
+                {openFaq === i && <div className="faq-a">{item.a}</div>}
+              </div>
+            ))}
           </div>
         </div>
       )}
 
+      <footer className="footer">
+        <div className="page footer-inner">© CoreAI Pool · Оплата USDT (BEP-20, BSC) · Тарифы рассчитаны от стоимости API</div>
+      </footer>
     </div>
   );
 }

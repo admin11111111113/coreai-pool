@@ -714,46 +714,6 @@ body::after {
   padding-bottom: 24px;
 }
 
-.slider-container {
-  margin: 24px 0;
-}
-
-.tier-slider {
-  width: 100%;
-  height: 6px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  border-radius: 3px;
-  outline: none;
-  margin-bottom: 24px;
-}
-
-.tier-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 24px;
-  height: 24px;
-  background: radial-gradient(circle at 35% 35%, #fff, var(--accent2) 60%);
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.18), 0 0 16px rgba(34, 211, 238, 0.6);
-}
-
-.tier-slider::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
-  background: radial-gradient(circle at 35% 35%, #fff, var(--accent2) 60%);
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.18), 0 0 16px rgba(34, 211, 238, 0.6);
-}
-
-.tier-info {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
 .tier-name {
   font-size: 14px;
   color: var(--accent2);
@@ -785,6 +745,284 @@ body::after {
   color: var(--success);
   margin-top: 6px;
   font-weight: 600;
+}
+
+/* ═══════ FEATURE GRID ═══════ */
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 16px;
+  margin: 20px 0;
+}
+
+@media (min-width: 560px) {
+  .feature-grid {
+    grid-template-columns: repeat(4, 1fr);
+    padding: 0 20px;
+  }
+}
+
+.feature-tile {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.feature-tile:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-glow);
+}
+
+.feature-num {
+  display: inline-block;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent2);
+  border: 1px solid var(--border-glow);
+  border-radius: 20px;
+  padding: 2px 8px;
+  margin-bottom: 10px;
+}
+
+.feature-tile h4 {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.feature-tile p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+/* ═══════ HOW IT WORKS ═══════ */
+
+.steps {
+  padding: 8px 16px 4px;
+  margin: 12px 0;
+}
+
+@media (min-width: 720px) {
+  .steps {
+    padding: 8px 20px 4px;
+  }
+}
+
+.steps-title {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.steps-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.step-dot {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #04101f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
+}
+
+.step strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.step p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ═══════ PRICING CARDS ═══════ */
+
+.section-heading {
+  text-align: center;
+  padding: 32px 20px 8px;
+}
+
+.section-heading h2 {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+
+.section-heading p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 20px 16px;
+}
+
+@media (min-width: 560px) {
+  .pricing-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 20px;
+  }
+}
+
+@media (min-width: 900px) {
+  .pricing-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.pricing-card {
+  position: relative;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.pricing-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-glow);
+  box-shadow: 0 14px 34px -12px rgba(59, 130, 246, 0.35);
+}
+
+.pricing-card.popular {
+  border-color: var(--border-glow);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25), 0 14px 34px -12px rgba(34, 211, 238, 0.4);
+}
+
+.pricing-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(120deg, var(--accent), var(--accent2));
+  color: #04101f;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.pricing-card .tier-price {
+  font-size: 32px;
+  margin: 4px 0;
+}
+
+.pricing-card .btn {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* ═══════ FAQ ═══════ */
+
+.faq {
+  padding: 8px 16px 32px;
+}
+
+@media (min-width: 720px) {
+  .faq {
+    padding: 8px 20px 40px;
+  }
+}
+
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  overflow: hidden;
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+}
+
+.faq-item.open {
+  border-color: var(--border-glow);
+}
+
+.faq-q {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faq-caret {
+  color: var(--accent2);
+  transition: transform 0.2s;
+  font-size: 16px;
+}
+
+.faq-item.open .faq-caret {
+  transform: rotate(180deg);
+}
+
+.faq-a {
+  padding: 0 16px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ═══════ FOOTER ═══════ */
+
+.footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: 20px 0 28px;
+}
+
+.footer-inner {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 /* ═══════ PAYMENT / RECEIVER ADDRESS BOX ═══════ */
