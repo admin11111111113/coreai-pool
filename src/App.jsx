@@ -122,6 +122,7 @@ function App() {
   const [debateQueueLength, setDebateQueueLength] = useState(0);
   const [debateArchive, setDebateArchive] = useState([]);
   const archiveSectionRef = useRef(null);
+  const [archiveQuery, setArchiveQuery] = useState("");
   const [highlightedRoundId, setHighlightedRoundId] = useState(null);
   const [topicInput, setTopicInput] = useState("");
   const [topicMood, setTopicMood] = useState("tough");
@@ -329,9 +330,16 @@ function App() {
     setTimeout(() => setCopied(false), 1800);
   }
 
-  function openArchiveRound(finishedAt) {
-    document.getElementById(`archive-round-${finishedAt}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlightedRoundId(finishedAt);
+  function openArchiveRound(round) {
+    // Карточка появляется в DOM только когда есть совпадение по поиску —
+    // сначала заполняем поиск её темой, потом (после рендера) скроллим к ней.
+    setArchiveQuery(round.topic);
+    setHighlightedRoundId(round.finishedAt);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById(`archive-round-${round.finishedAt}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
     setTimeout(() => setHighlightedRoundId(null), 2500);
   }
 
@@ -454,7 +462,7 @@ function App() {
                         key={r.finishedAt}
                         type="button"
                         className="topic-suggest-item"
-                        onClick={() => openArchiveRound(r.finishedAt)}
+                        onClick={() => openArchiveRound(r)}
                       >
                         {r.topic} →
                       </button>
@@ -642,53 +650,69 @@ function App() {
 
           {debateArchive.length > 0 && (
             <div className="steps" ref={archiveSectionRef}>
-              <h3 className="steps-title">Архив тем — к чему уже пришли</h3>
-              <p style={{ fontSize: 12.5, color: "var(--text-mute)", textAlign: "center", marginTop: -14, marginBottom: 22 }}>
-                Документ — это развёрнутая позиция ядра по своим данным, без живой проверки в интернете. Источники и
-                цифры в нём — не готовое юридическое заключение, а материал для вашей собственной проверки.
-              </p>
-              <div className="steps-grid">
-                {debateArchive.map((round, i) => (
-                  <div
-                    className={`step ${highlightedRoundId === round.finishedAt ? "step-highlight" : ""}`}
-                    id={`archive-round-${round.finishedAt}`}
-                    key={round.finishedAt || i}
-                  >
-                    <div>
-                      <strong>{round.topic}</strong>
-                      {round.messages
-                        .filter((m) => m.isConclusion)
-                        .map((m, j) => (
-                          <p key={j} style={{ marginTop: 8 }}>
-                            <span
-                              style={{
-                                fontFamily: "var(--mono)",
-                                fontSize: 11,
-                                color: m.speaker === "fast" ? "var(--cyan)" : "var(--violet)",
-                              }}
-                            >
-                              {m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}:
-                            </span>{" "}
-                            {m.text}
-                          </p>
-                        ))}
-                      <div className="doc-buttons">
-                        {["fast", "pro"].map((speaker) => (
-                          <a
-                            key={speaker}
-                            className="doc-btn"
-                            href={documentPdfUrl(round, speaker, false)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {`📄 Документ ${speaker === "fast" ? "Fast" : "Pro"}`}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <h3 className="steps-title">Архив тем</h3>
+              <div className="archive-search">
+                <input
+                  type="text"
+                  className="chat-input"
+                  placeholder={`Искать среди ${debateArchive.length} обсуждённых тем...`}
+                  value={archiveQuery}
+                  onChange={(e) => setArchiveQuery(e.target.value)}
+                />
               </div>
+
+              {archiveQuery.trim().length >= 2 &&
+                (() => {
+                  const q = archiveQuery.trim().toLowerCase();
+                  const matches = debateArchive.filter((r) => r.topic.toLowerCase().includes(q));
+                  if (matches.length === 0) {
+                    return <p className="archive-empty">Ничего не нашлось — попробуйте другое слово.</p>;
+                  }
+                  return (
+                    <div className="steps-grid">
+                      {matches.map((round, i) => (
+                        <div
+                          className={`step ${highlightedRoundId === round.finishedAt ? "step-highlight" : ""}`}
+                          id={`archive-round-${round.finishedAt}`}
+                          key={round.finishedAt || i}
+                        >
+                          <div>
+                            <strong>{round.topic}</strong>
+                            {round.messages
+                              .filter((m) => m.isConclusion)
+                              .map((m, j) => (
+                                <p key={j} style={{ marginTop: 8 }}>
+                                  <span
+                                    style={{
+                                      fontFamily: "var(--mono)",
+                                      fontSize: 11,
+                                      color: m.speaker === "fast" ? "var(--cyan)" : "var(--violet)",
+                                    }}
+                                  >
+                                    {m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}:
+                                  </span>{" "}
+                                  {m.text}
+                                </p>
+                              ))}
+                            <div className="doc-buttons">
+                              {["fast", "pro"].map((speaker) => (
+                                <a
+                                  key={speaker}
+                                  className="doc-btn"
+                                  href={documentPdfUrl(round, speaker, false)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {`📄 Документ ${speaker === "fast" ? "Fast" : "Pro"}`}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
             </div>
           )}
           </div>

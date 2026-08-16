@@ -996,6 +996,15 @@ body::after {
 
 .topic-suggest-item:hover { text-decoration: underline; }
 
+.archive-search { margin-bottom: 4px; }
+
+.archive-empty {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-mute);
+  margin-top: 16px;
+}
+
 .step-highlight {
   border-color: var(--signal) !important;
   box-shadow: 0 0 0 2px rgba(215, 255, 92, 0.35) !important;
