@@ -124,8 +124,8 @@ function CoreVisual() {
 }
 
 /* ——— Персонаж-«ядро», флангует панель эфира; светится, когда говорит ——— */
-function CoreCharacter({ side, speaking, colorA, colorB }) {
-  const gradId = `char-${side}`;
+function CoreCharacter({ side, speaking, small, colorA, colorB }) {
+  const gradId = `char-${small ? "sm-" : ""}${side}`;
   return (
     <div className={`char char-${side} ${speaking ? "speaking" : ""}`}>
       <svg viewBox="0 0 100 120" aria-hidden="true">
@@ -440,12 +440,20 @@ function App() {
         <div className="home-layout">
           <div className="home-right">
           <div className="chat-panel">
-            <div className="ai-switcher">
-              <button className={`ai-btn ${selectedAI === "gemini" ? "active" : ""}`} onClick={() => setSelectedAI("gemini")}>
-                CoreAI Fast
+            <div className="chat-avatars">
+              <button
+                className={`chat-avatar-btn ${selectedAI === "gemini" ? "active" : ""}`}
+                onClick={() => setSelectedAI("gemini")}
+              >
+                <CoreCharacter side="left" small speaking={selectedAI === "gemini"} colorA="#a5f3fc" colorB="#0e7490" />
+                <span>CoreAI Fast</span>
               </button>
-              <button className={`ai-btn ${selectedAI === "groq" ? "active" : ""}`} onClick={() => setSelectedAI("groq")}>
-                CoreAI Pro
+              <button
+                className={`chat-avatar-btn ${selectedAI === "groq" ? "active" : ""}`}
+                onClick={() => setSelectedAI("groq")}
+              >
+                <CoreCharacter side="right" small speaking={selectedAI === "groq"} colorA="#e9d5ff" colorB="#5b21b6" />
+                <span>CoreAI Pro</span>
               </button>
             </div>
 
