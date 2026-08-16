@@ -28,6 +28,96 @@ function getOrCreateSessionId() {
   return id;
 }
 
+/* ——— Визуал: два ИИ-ядра, связанные потоком ——— */
+function CoreVisual() {
+  return (
+    <svg className="core-svg" viewBox="0 0 520 230" fill="none" aria-hidden="true">
+      <defs>
+        <radialGradient id="cvA" cx="38%" cy="34%">
+          <stop offset="0%" stopColor="#a5f3fc" />
+          <stop offset="45%" stopColor="#22d3ee" />
+          <stop offset="100%" stopColor="#0e7490" />
+        </radialGradient>
+        <radialGradient id="cvB" cx="38%" cy="34%">
+          <stop offset="0%" stopColor="#e9d5ff" />
+          <stop offset="45%" stopColor="#8b5cf6" />
+          <stop offset="100%" stopColor="#5b21b6" />
+        </radialGradient>
+        <linearGradient id="cvLink" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#22d3ee" />
+          <stop offset="50%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#8b5cf6" />
+        </linearGradient>
+        <filter id="cvGlow" x="-70%" y="-70%" width="240%" height="240%">
+          <feGaussianBlur stdDeviation="13" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id="cvSoft" x="-70%" y="-70%" width="240%" height="240%">
+          <feGaussianBlur stdDeviation="22" />
+        </filter>
+      </defs>
+
+      {/* мягкое свечение под ядрами */}
+      <ellipse cx="150" cy="115" rx="62" ry="62" fill="#22d3ee" opacity="0.24" filter="url(#cvSoft)" />
+      <ellipse cx="370" cy="115" rx="62" ry="62" fill="#8b5cf6" opacity="0.24" filter="url(#cvSoft)" />
+
+      {/* орбиты */}
+      <ellipse cx="260" cy="115" rx="168" ry="62" stroke="url(#cvLink)" strokeWidth="1" opacity="0.28" />
+      <ellipse cx="260" cy="115" rx="132" ry="94" stroke="url(#cvLink)" strokeWidth="1" opacity="0.16" />
+
+      {/* поток между ядрами */}
+      <path
+        d="M150 115 C 200 62, 320 62, 370 115"
+        stroke="url(#cvLink)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray="7 11"
+        opacity="0.85"
+      >
+        <animate attributeName="stroke-dashoffset" from="72" to="0" dur="2.6s" repeatCount="indefinite" />
+      </path>
+      <path
+        d="M150 115 C 200 168, 320 168, 370 115"
+        stroke="url(#cvLink)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray="7 11"
+        opacity="0.55"
+      >
+        <animate attributeName="stroke-dashoffset" from="0" to="72" dur="3.4s" repeatCount="indefinite" />
+      </path>
+
+      {/* ядра */}
+      <circle cx="150" cy="115" r="34" fill="url(#cvA)" filter="url(#cvGlow)">
+        <animate attributeName="r" values="34;37;34" dur="4.6s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="370" cy="115" r="34" fill="url(#cvB)" filter="url(#cvGlow)">
+        <animate attributeName="r" values="34;37;34" dur="4.6s" begin="-2.3s" repeatCount="indefinite" />
+      </circle>
+
+      {/* блики */}
+      <circle cx="140" cy="104" r="9" fill="#fff" opacity="0.5" />
+      <circle cx="360" cy="104" r="9" fill="#fff" opacity="0.5" />
+
+      {/* частицы */}
+      <circle r="3.5" fill="#67e8f9">
+        <animateMotion dur="4.2s" repeatCount="indefinite" path="M150 115 C 200 62, 320 62, 370 115" />
+        <animate attributeName="opacity" values="0;1;1;0" dur="4.2s" repeatCount="indefinite" />
+      </circle>
+      <circle r="3.5" fill="#c4b5fd">
+        <animateMotion dur="5s" begin="-2s" repeatCount="indefinite" path="M370 115 C 320 168, 200 168, 150 115" />
+        <animate attributeName="opacity" values="0;1;1;0" dur="5s" begin="-2s" repeatCount="indefinite" />
+      </circle>
+      <circle r="2.5" fill="#93c5fd">
+        <animateMotion dur="6.4s" begin="-1s" repeatCount="indefinite" path="M92 115 A 168 62 0 1 0 428 115 A 168 62 0 1 0 92 115" />
+      </circle>
+    </svg>
+  );
+}
+
 function App() {
   // ==================== СОСТОЯНИЕ ====================
   const [sessionId] = useState(getOrCreateSessionId);
@@ -38,6 +128,7 @@ function App() {
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [pendingPayment, setPendingPayment] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
@@ -97,7 +188,10 @@ function App() {
   }
 
   function copyReceiverAddress() {
-    if (pendingPayment) navigator.clipboard.writeText(pendingPayment.receiverAddress);
+    if (!pendingPayment) return;
+    navigator.clipboard.writeText(pendingPayment.receiverAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
   }
 
   // ==================== ЧАТ С ИИ ====================
@@ -139,7 +233,10 @@ function App() {
   }
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Прокручиваем только ленту чата и только когда есть сообщения,
+    // иначе страница «прыгает» вниз при первой загрузке.
+    if (messages.length === 0) return;
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages]);
 
   // ======================== HELPERS ========================
@@ -161,7 +258,9 @@ function App() {
       {/* HEADER */}
       <header className="header">
         <div className="bar-inner">
-          <h1 className="header-logo">CoreAI Pool</h1>
+          <h1 className="header-logo">
+            <span>CoreAI Pool</span>
+          </h1>
           <div className="header-right">
             {userData?.walletAddress && (
               <span className="wallet-badge" title="Кошелёк, с которого оплачена подписка">
@@ -191,7 +290,21 @@ function App() {
       {activeTab === "chat" && (
         <div className="page">
           <div className="hero hero-compact">
-            <p className="hero-tagline">Два ИИ-ядра в одном чате — с автопереключением при лимите</p>
+            <div className="hero-eyebrow">
+              <span className="pill">2 ядра</span>
+              Gemini Flash + Llama 3.1 в одном окне
+            </div>
+            <p className="hero-tagline">
+              Два ИИ-ядра в одном чате — с <em>автопереключением</em> при лимите
+            </p>
+            <p className="hero-sub">
+              Упёрлись в лимит одного ядра — сервер молча подставит второе. Вы просто продолжаете
+              разговор и получаете ответ.
+            </p>
+
+            <div className="hero-visual">
+              <CoreVisual />
+            </div>
           </div>
 
           <div className="chat-panel">
@@ -207,6 +320,7 @@ function App() {
             <div className="chat-messages">
               {messages.length === 0 && (
                 <div className="chat-empty">
+                  <div className="chat-empty-icon">✦</div>
                   <p>Задайте вопрос ИИ-ассистенту CoreAI</p>
                 </div>
               )}
@@ -316,6 +430,11 @@ function App() {
       {/* КАБИНЕТ + ПОДПИСКА */}
       {activeTab === "profile" && (
         <div className="page">
+          <div className="hero hero-compact">
+            <p className="hero-tagline">Кабинет</p>
+            <p className="hero-sub">Статус подписки, дневной лимит и тарифы — всё на одной странице.</p>
+          </div>
+
           <div className="card">
             <h3>Ваша подписка</h3>
             {userData?.isActive ? (
@@ -383,7 +502,7 @@ function App() {
             </div>
           )}
 
-          <div className="section-heading">
+          <div className="section-heading" style={{ marginTop: 48 }}>
             <h2>Тарифы</h2>
             <p>Все тарифы — на 30 дней, разница только в дневном лимите запросов к ИИ.</p>
           </div>
@@ -412,16 +531,16 @@ function App() {
           ) : (
             <div className="card">
               <h3>Оплата ожидается</h3>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+              <p>
                 Переведите ровно <strong>{pendingPayment.amount} {TOKEN_SYMBOL}</strong> ({NETWORK_LABEL}) на адрес:
               </p>
               <div className="ref-link-box">
                 <input type="text" readOnly value={pendingPayment.receiverAddress} className="ref-link-input" />
                 <button className="btn btn-primary" onClick={copyReceiverAddress}>
-                  Скопировать
+                  {copied ? "Скопировано" : "Скопировать"}
                 </button>
               </div>
-              <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 12 }}>
+              <p style={{ fontSize: 13, marginTop: 14 }}>
                 Как только платёж найдётся в блокчейне — подписка включится автоматически (проверяем каждые ~30 сек).
               </p>
             </div>
