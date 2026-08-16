@@ -121,9 +121,6 @@ function App() {
   const [debateRepliesLeft, setDebateRepliesLeft] = useState(0);
   const [debateQueueLength, setDebateQueueLength] = useState(0);
   const [debateArchive, setDebateArchive] = useState([]);
-  const archiveSectionRef = useRef(null);
-  const [archiveQuery, setArchiveQuery] = useState("");
-  const [highlightedRoundId, setHighlightedRoundId] = useState(null);
   const [topicInput, setTopicInput] = useState("");
   const [topicMood, setTopicMood] = useState("tough");
   const [topicNotice, setTopicNotice] = useState("");
@@ -330,19 +327,6 @@ function App() {
     setTimeout(() => setCopied(false), 1800);
   }
 
-  function openArchiveRound(round) {
-    // Карточка появляется в DOM только когда есть совпадение по поиску —
-    // сначала заполняем поиск её темой, потом (после рендера) скроллим к ней.
-    setArchiveQuery(round.topic);
-    setHighlightedRoundId(round.finishedAt);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.getElementById(`archive-round-${round.finishedAt}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-    });
-    setTimeout(() => setHighlightedRoundId(null), 2500);
-  }
-
   function documentPdfUrl(round, speaker, download) {
     const params = new URLSearchParams({ finishedAt: String(round.finishedAt), speaker });
     if (download) params.set("download", "1");
@@ -437,35 +421,52 @@ function App() {
               <button type="submit" className="btn btn-primary" disabled={isSettingTopic || !topicInput.trim()}>
                 {isSettingTopic ? "..." : "Обсудить"}
               </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => archiveSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              >
-                📁 Архив
-              </button>
             </form>
 
             {topicInput.trim().length >= 2 &&
               (() => {
                 const q = topicInput.trim().toLowerCase();
-                const matches = debateArchive.filter((r) => r.topic.toLowerCase().includes(q)).slice(0, 5);
+                const matches = debateArchive.filter((r) => r.topic.toLowerCase().includes(q)).slice(0, 3);
                 if (matches.length === 0) return null;
                 return (
                   <div className="topic-suggest">
                     <div className="topic-suggest-label">
-                      Похожая тема уже обсуждалась — откройте готовый ответ ниже, или впишите свой вопрос точнее и
-                      нажмите «Обсудить», чтобы создать новую:
+                      Похожая тема уже обсуждалась — готовый ответ ниже, или впишите точнее и нажмите «Обсудить»,
+                      чтобы создать новую:
                     </div>
-                    {matches.map((r) => (
-                      <button
-                        key={r.finishedAt}
-                        type="button"
-                        className="topic-suggest-item"
-                        onClick={() => openArchiveRound(r)}
-                      >
-                        {r.topic} →
-                      </button>
+                    {matches.map((round) => (
+                      <div className="topic-suggest-card" key={round.finishedAt}>
+                        <strong>{round.topic}</strong>
+                        {round.messages
+                          .filter((m) => m.isConclusion)
+                          .map((m, j) => (
+                            <p key={j} style={{ marginTop: 8 }}>
+                              <span
+                                style={{
+                                  fontFamily: "var(--mono)",
+                                  fontSize: 11,
+                                  color: m.speaker === "fast" ? "var(--cyan)" : "var(--violet)",
+                                }}
+                              >
+                                {m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}:
+                              </span>{" "}
+                              {m.text}
+                            </p>
+                          ))}
+                        <div className="doc-buttons">
+                          {["fast", "pro"].map((speaker) => (
+                            <a
+                              key={speaker}
+                              className="doc-btn"
+                              href={documentPdfUrl(round, speaker, false)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {`📄 Документ ${speaker === "fast" ? "Fast" : "Pro"}`}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 );
@@ -648,73 +649,6 @@ function App() {
             <p>Итог не выносится. Ядра не голосуют и не объявляют победителя: вывод остаётся за вами. В этом смысл.</p>
           </div>
 
-          {debateArchive.length > 0 && (
-            <div className="steps" ref={archiveSectionRef}>
-              <h3 className="steps-title">Архив тем</h3>
-              <div className="archive-search">
-                <input
-                  type="text"
-                  className="chat-input"
-                  placeholder={`Искать среди ${debateArchive.length} обсуждённых тем...`}
-                  value={archiveQuery}
-                  onChange={(e) => setArchiveQuery(e.target.value)}
-                />
-              </div>
-
-              {archiveQuery.trim().length >= 2 &&
-                (() => {
-                  const q = archiveQuery.trim().toLowerCase();
-                  const matches = debateArchive.filter((r) => r.topic.toLowerCase().includes(q));
-                  if (matches.length === 0) {
-                    return <p className="archive-empty">Ничего не нашлось — попробуйте другое слово.</p>;
-                  }
-                  return (
-                    <div className="steps-grid">
-                      {matches.map((round, i) => (
-                        <div
-                          className={`step ${highlightedRoundId === round.finishedAt ? "step-highlight" : ""}`}
-                          id={`archive-round-${round.finishedAt}`}
-                          key={round.finishedAt || i}
-                        >
-                          <div>
-                            <strong>{round.topic}</strong>
-                            {round.messages
-                              .filter((m) => m.isConclusion)
-                              .map((m, j) => (
-                                <p key={j} style={{ marginTop: 8 }}>
-                                  <span
-                                    style={{
-                                      fontFamily: "var(--mono)",
-                                      fontSize: 11,
-                                      color: m.speaker === "fast" ? "var(--cyan)" : "var(--violet)",
-                                    }}
-                                  >
-                                    {m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}:
-                                  </span>{" "}
-                                  {m.text}
-                                </p>
-                              ))}
-                            <div className="doc-buttons">
-                              {["fast", "pro"].map((speaker) => (
-                                <a
-                                  key={speaker}
-                                  className="doc-btn"
-                                  href={documentPdfUrl(round, speaker, false)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {`📄 Документ ${speaker === "fast" ? "Fast" : "Pro"}`}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-            </div>
-          )}
           </div>
         </div>
       )}

@@ -983,33 +983,14 @@ body::after {
   margin-bottom: 2px;
 }
 
-.topic-suggest-item {
-  text-align: left;
-  background: transparent;
-  border: none;
-  color: var(--signal);
-  font-family: inherit;
-  font-size: 13px;
-  padding: 4px 0;
-  cursor: pointer;
+.topic-suggest-card {
+  padding: 12px;
+  border-radius: var(--r);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
 }
 
-.topic-suggest-item:hover { text-decoration: underline; }
-
-.archive-search { margin-bottom: 4px; }
-
-.archive-empty {
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-mute);
-  margin-top: 16px;
-}
-
-.step-highlight {
-  border-color: var(--signal) !important;
-  box-shadow: 0 0 0 2px rgba(215, 255, 92, 0.35) !important;
-  transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
-}
+.topic-suggest-card strong { font-size: 13.5px; }
 
 /* ═══════════ ТАРИФЫ ═══════════ */
 
