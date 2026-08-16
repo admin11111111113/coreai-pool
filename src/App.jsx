@@ -120,6 +120,51 @@ function App() {
   const debateEndRef = useRef(null);
   const debateMessagesRef = useRef(null);
 
+  // ==================== ФОН: пинг-понг воспроизведение видео ====================
+  // Обычный loop даёт резкий рывок в конце ролика. Вместо этого сами гоним
+  // currentTime вперёд-назад (вперёд до конца, потом обратно к началу) —
+  // получается непрерывное "дыхание" без видимого шва, и медленнее оригинала.
+  const bgVideoRef = useRef(null);
+  useEffect(() => {
+    const video = bgVideoRef.current;
+    if (!video) return;
+    const PLAYBACK_SPEED = 0.4; // доля от нормальной скорости
+    let direction = 1;
+    let lastTs = null;
+    let rafId = null;
+
+    function step(ts) {
+      if (lastTs === null) lastTs = ts;
+      const dt = (ts - lastTs) / 1000;
+      lastTs = ts;
+      if (video.duration) {
+        let next = video.currentTime + direction * PLAYBACK_SPEED * dt;
+        if (next >= video.duration) {
+          next = video.duration;
+          direction = -1;
+        } else if (next <= 0) {
+          next = 0;
+          direction = 1;
+        }
+        video.currentTime = next;
+      }
+      rafId = requestAnimationFrame(step);
+    }
+
+    function start() {
+      video.pause();
+      if (rafId === null) rafId = requestAnimationFrame(step);
+    }
+
+    if (video.readyState >= 1) start();
+    else video.addEventListener("loadedmetadata", start, { once: true });
+
+    return () => {
+      video.removeEventListener("loadedmetadata", start);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   const loadDebate = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/debate/messages`);
@@ -243,7 +288,7 @@ function App() {
 
   return (
     <div className="app">
-      <video className="bg-video" autoPlay muted loop playsInline src={`${import.meta.env.BASE_URL}bg.mp4`} />
+      <video ref={bgVideoRef} className="bg-video" muted playsInline preload="auto" src={`${import.meta.env.BASE_URL}bg.mp4`} />
       <div className="bg-video-overlay" aria-hidden="true"></div>
 
       {/* HEADER */}
