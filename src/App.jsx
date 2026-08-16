@@ -398,12 +398,6 @@ function App() {
               Не один ассистент с готовым ответом, а два независимых ядра, которые спорят о вашем
               вопросе вживую. Вы читаете столкновение позиций и делаете вывод сами.
             </p>
-            <div className="tech-badges">
-              <span className="tech-badge">⚡ Два независимых ИИ-движка</span>
-              <span className="tech-badge">🔁 Живой перекрёстный спор в реальном времени</span>
-              <span className="tech-badge">🛟 Автопереключение, если один ИИ перегружен</span>
-              <span className="tech-badge">🧠 Модели обновляются без вашего участия</span>
-            </div>
           </div>
 
           <div className="debate-hub">
@@ -599,33 +593,6 @@ function App() {
               за формулировку. Вам не нужно быть экспертом, чтобы это заметить — достаточно
               прочитать, в чём именно они не сошлись.
             </p>
-          </div>
-
-          <div className="feature-grid">
-            <div className="feature-tile">
-              <span className="feature-num">01</span>
-              <h4>Решения с компромиссом</h4>
-              <p>
-                Снимать или брать ипотеку. Депозит или индексный фонд. Нанять в штат или отдать на
-                аутсорс. Там, где нет одного правильного ответа, полезнее увидеть обе стороны, чем
-                получить чужой вывод.
-              </p>
-            </div>
-            <div className="feature-tile">
-              <span className="feature-num">02</span>
-              <h4>Проверка утверждения</h4>
-              <p>Услышали тезис и не уверены. Поставьте его на обсуждение — второе ядро вытащит контраргументы, которых вы бы не нашли.</p>
-            </div>
-            <div className="feature-tile">
-              <span className="feature-num">03</span>
-              <h4>Подготовка к разговору</h4>
-              <p>Перед переговорами, собеседованием или защитой идеи полезно заранее услышать, что вам возразят.</p>
-            </div>
-            <div className="feature-tile">
-              <span className="feature-num">04</span>
-              <h4>Разобраться в теме</h4>
-              <p>Когда нужен не ответ, а понимание — спор объясняет предмет лучше, чем справка, потому что показывает, что в нём спорно.</p>
-            </div>
           </div>
 
           <div className="card">
@@ -879,9 +846,6 @@ function App() {
         </div>
       )}
 
-      <footer className="footer">
-        <div className="page footer-inner">© CoreAI Pool · Оплата USDT (BEP-20, BSC) · Тарифы рассчитаны от стоимости API</div>
-      </footer>
     </div>
   );
 }
