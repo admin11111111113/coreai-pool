@@ -115,8 +115,10 @@ function App() {
   // ==================== ЭФИР: ДЕБАТЫ CoreAI Fast vs CoreAI Pro ====================
   const [debateTopic, setDebateTopic] = useState("");
   const [debateMessages, setDebateMessages] = useState([]);
-  const [debateCustomPhase, setDebateCustomPhase] = useState(null);
-  const [debateCustomRepliesLeft, setDebateCustomRepliesLeft] = useState(0);
+  const [debateIsDefaultTopic, setDebateIsDefaultTopic] = useState(true);
+  const [debatePhase, setDebatePhase] = useState(null);
+  const [debateRepliesLeft, setDebateRepliesLeft] = useState(0);
+  const [debateArchive, setDebateArchive] = useState([]);
   const [topicInput, setTopicInput] = useState("");
   const [isSettingTopic, setIsSettingTopic] = useState(false);
   const debateEndRef = useRef(null);
@@ -184,11 +186,24 @@ function App() {
         const data = await res.json();
         setDebateTopic(data.topic || "");
         setDebateMessages(data.messages || []);
-        setDebateCustomPhase(data.customPhase || null);
-        setDebateCustomRepliesLeft(data.customRepliesLeft || 0);
+        setDebateIsDefaultTopic(data.isDefaultTopic !== false);
+        setDebatePhase(data.phase || null);
+        setDebateRepliesLeft(data.repliesLeft || 0);
       }
     } catch (err) {
       console.error("Debate load error:", err);
+    }
+  }, []);
+
+  const loadDebateArchive = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/debate/archive`);
+      if (res.ok) {
+        const data = await res.json();
+        setDebateArchive(data.items || []);
+      }
+    } catch (err) {
+      console.error("Debate archive load error:", err);
     }
   }, []);
 
@@ -197,6 +212,12 @@ function App() {
     const interval = setInterval(loadDebate, 5000);
     return () => clearInterval(interval);
   }, [loadDebate]);
+
+  useEffect(() => {
+    loadDebateArchive();
+    const interval = setInterval(loadDebateArchive, 20000);
+    return () => clearInterval(interval);
+  }, [loadDebateArchive]);
 
   useEffect(() => {
     const el = debateMessagesRef.current;
@@ -363,10 +384,10 @@ function App() {
 
             <div className="debate-topic-current">
               Сейчас обсуждают: <strong>{debateTopic || "…"}</strong>
-              {debateCustomPhase === "replies" && (
-                <div style={{ marginTop: 4 }}>Разбор вашей темы — осталось реплик: {debateCustomRepliesLeft}</div>
+              {!debateIsDefaultTopic && debatePhase === "replies" && (
+                <div style={{ marginTop: 4 }}>Разбор вашей темы — осталось реплик: {debateRepliesLeft}</div>
               )}
-              {(debateCustomPhase === "conclusion-fast" || debateCustomPhase === "conclusion-pro") && (
+              {!debateIsDefaultTopic && (debatePhase === "conclusion-fast" || debatePhase === "conclusion-pro") && (
                 <div style={{ marginTop: 4 }}>Ядра подводят итоги...</div>
               )}
               {userData?.isActive && <div style={{ marginTop: 4 }}>Осталось тем в этом периоде: {userData?.dailyRemaining ?? "—"}</div>}
@@ -528,6 +549,37 @@ function App() {
             <p>Это не финансовая, юридическая и не медицинская консультация — это два взгляда на вопрос, а не рекомендация.</p>
             <p>Итог не выносится. Ядра не голосуют и не объявляют победителя: вывод остаётся за вами. В этом смысл.</p>
           </div>
+
+          {debateArchive.length > 0 && (
+            <div className="steps">
+              <h3 className="steps-title">Архив тем — к чему уже пришли</h3>
+              <div className="steps-grid">
+                {debateArchive.slice(0, 8).map((round, i) => (
+                  <div className="step" key={round.finishedAt || i}>
+                    <div>
+                      <strong>{round.topic}</strong>
+                      {round.messages
+                        .filter((m) => m.isConclusion)
+                        .map((m, j) => (
+                          <p key={j} style={{ marginTop: 8 }}>
+                            <span
+                              style={{
+                                fontFamily: "var(--mono)",
+                                fontSize: 11,
+                                color: m.speaker === "fast" ? "var(--cyan)" : "var(--violet)",
+                              }}
+                            >
+                              {m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}:
+                            </span>{" "}
+                            {m.text}
+                          </p>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           </div>
         </div>
         </div>
