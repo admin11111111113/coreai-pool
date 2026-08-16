@@ -582,7 +582,7 @@ function App() {
                   {authMode === "register" ? "Уже есть аккаунт? " : "Ещё нет аккаунта? "}
                   <a
                     href="#"
-                    style={{ color: "var(--cyan)" }}
+                    style={{ color: "var(--signal)" }}
                     onClick={(e) => {
                       e.preventDefault();
                       setAuthMode(authMode === "register" ? "login" : "register");
