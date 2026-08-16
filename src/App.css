@@ -794,6 +794,33 @@ body::after {
   color: var(--text-dim);
 }
 
+.doc-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.doc-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--line-hi);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.doc-btn:hover:not(:disabled) {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+
+.doc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ═══════════ КАРТОЧКИ ═══════════ */
 
 .card {

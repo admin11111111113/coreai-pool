@@ -33,6 +33,46 @@ function shortTx(hash) {
   return hash.slice(0, 8) + "..." + hash.slice(-6);
 }
 
+// ==================== ДОКУМЕНТ: экспорт в .rtf (открывается Word'ом) ====================
+// RTF в кодировке \ansi не поддерживает кириллицу напрямую — экранируем
+// каждый не-ASCII символ юникодной escape-последовательностью \uN.
+function escapeRtf(str) {
+  let out = "";
+  for (const ch of str) {
+    const code = ch.codePointAt(0);
+    if (ch === "\\" || ch === "{" || ch === "}") {
+      out += "\\" + ch;
+    } else if (ch === "\n") {
+      out += "\\par\n";
+    } else if (code < 128) {
+      out += ch;
+    } else if (code > 0xffff) {
+      out += "?"; // редкие символы вне BMP — не встречаются в наших текстах
+    } else {
+      const signed = code > 32767 ? code - 65536 : code;
+      out += `\\u${signed}?`;
+    }
+  }
+  return out;
+}
+
+function buildRtfDocument(title, body) {
+  return `{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Arial;}}\\f0\\fs28\\b ${escapeRtf(title)}\\b0\\par\\fs22\\par ${escapeRtf(body)}}`;
+}
+
+function downloadRtf(filename, title, body) {
+  const rtf = buildRtfDocument(title, body);
+  const blob = new Blob([rtf], { type: "application/rtf" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function App() {
   // ==================== СОСТОЯНИЕ ====================
   const [sessionId, setSessionId] = useState(getOrCreateSessionId);
@@ -120,6 +160,7 @@ function App() {
   const [debateRepliesLeft, setDebateRepliesLeft] = useState(0);
   const [debateQueueLength, setDebateQueueLength] = useState(0);
   const [debateArchive, setDebateArchive] = useState([]);
+  const [docLoadingKey, setDocLoadingKey] = useState(null);
   const [topicInput, setTopicInput] = useState("");
   const [topicMood, setTopicMood] = useState("tough");
   const [topicNotice, setTopicNotice] = useState("");
@@ -311,6 +352,31 @@ function App() {
     navigator.clipboard.writeText(pendingPayment.receiverAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
+  }
+
+  async function handleDownloadDocument(round, speaker) {
+    const key = `${round.finishedAt}-${speaker}`;
+    if (docLoadingKey) return;
+    setDocLoadingKey(key);
+    setError("");
+    try {
+      const res = await fetch(`${API_URL}/api/debate/document`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ finishedAt: round.finishedAt, speaker }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || data.error || "Не удалось сгенерировать документ");
+        return;
+      }
+      const name = speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro";
+      downloadRtf(`${name} — ${round.topic.slice(0, 60)}.rtf`, `${name}: ${round.topic}`, data.text);
+    } catch (err) {
+      setError("Ошибка: " + err.message);
+    } finally {
+      setDocLoadingKey(null);
+    }
   }
 
   // ======================== HELPERS ========================
@@ -590,6 +656,10 @@ function App() {
           {debateArchive.length > 0 && (
             <div className="steps">
               <h3 className="steps-title">Архив тем — к чему уже пришли</h3>
+              <p style={{ fontSize: 12.5, color: "var(--text-mute)", textAlign: "center", marginTop: -14, marginBottom: 22 }}>
+                Документ — это развёрнутая позиция ядра по своим данным, без живой проверки в интернете. Источники и
+                цифры в нём — не готовое юридическое заключение, а материал для вашей собственной проверки.
+              </p>
               <div className="steps-grid">
                 {debateArchive.slice(0, 8).map((round, i) => (
                   <div className="step" key={round.finishedAt || i}>
@@ -611,6 +681,24 @@ function App() {
                             {m.text}
                           </p>
                         ))}
+                      <div className="doc-buttons">
+                        {["fast", "pro"].map((speaker) => {
+                          const key = `${round.finishedAt}-${speaker}`;
+                          return (
+                            <button
+                              key={speaker}
+                              type="button"
+                              className="doc-btn"
+                              onClick={() => handleDownloadDocument(round, speaker)}
+                              disabled={!!docLoadingKey}
+                            >
+                              {docLoadingKey === key
+                                ? "..."
+                                : `📄 Документ ${speaker === "fast" ? "Fast" : "Pro"}`}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 ))}
