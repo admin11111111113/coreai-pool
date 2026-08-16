@@ -118,6 +118,7 @@ function App() {
   const [topicInput, setTopicInput] = useState("");
   const [isSettingTopic, setIsSettingTopic] = useState(false);
   const debateEndRef = useRef(null);
+  const debateMessagesRef = useRef(null);
 
   const loadDebate = useCallback(async () => {
     try {
@@ -139,7 +140,10 @@ function App() {
   }, [loadDebate]);
 
   useEffect(() => {
-    if (debateMessages.length > 0) debateEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const el = debateMessagesRef.current;
+    if (!el || debateMessages.length === 0) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) debateEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [debateMessages]);
 
   async function handleSetTopic(e) {
@@ -307,7 +311,7 @@ function App() {
             </div>
 
             <div className="debate-panel">
-              <div className="debate-messages">
+              <div className="debate-messages" ref={debateMessagesRef}>
                 {debateMessages.length === 0 && (
                   <div className="chat-empty">
                     <div className="chat-empty-icon">✦</div>
