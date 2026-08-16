@@ -15,7 +15,7 @@ export const TOKEN_SYMBOL = "USDT";
 //     floor(amount/3); дневной лимит = блоков/30 (1980 -> 660 блоков -> ровно
 //     22/день без остатка). Формула должна совпадать с
 //     backend/server.js computeDailyLimit()/computeBlocksPerMonth() ———
-export const TIER_MIN_AMOUNT = 3;
+export const TIER_MIN_AMOUNT = 12;
 export const TIER_MAX_AMOUNT = 1980;
 const TIER_BLOCK_PRICE = 3;
 

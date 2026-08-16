@@ -369,7 +369,7 @@ function App() {
               {(debateCustomPhase === "conclusion-fast" || debateCustomPhase === "conclusion-pro") && (
                 <div style={{ marginTop: 4 }}>Ядра подводят итоги...</div>
               )}
-              {userData?.isActive && <div style={{ marginTop: 4 }}>Осталось запросов сегодня: {userData?.dailyRemaining ?? "—"}</div>}
+              {userData?.isActive && <div style={{ marginTop: 4 }}>Осталось тем в этом периоде: {userData?.dailyRemaining ?? "—"}</div>}
             </div>
 
             <div className="debate-panel">
@@ -626,7 +626,7 @@ function App() {
               <div className="stat-value">{userData?.dailyUsed || 0}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Осталось сегодня</div>
+              <div className="stat-label">Осталось в периоде</div>
               <div className="stat-value">{userData?.dailyRemaining ?? 0}</div>
             </div>
           </div>
@@ -695,7 +695,7 @@ function App() {
               <div className="tier-requests">
                 ≈ {computeDailyLimit(tierAmount)} запросов/день
                 <div style={{ fontSize: 12, marginTop: 6, color: "var(--text-mute)" }}>
-                  {TIER_MIN_AMOUNT} {TOKEN_SYMBOL} = один полный разбор темы (8 реплик + 2 итога)
+                  3 {TOKEN_SYMBOL} = один полный разбор темы (8 реплик + 2 итога)
                 </div>
               </div>
               <button
