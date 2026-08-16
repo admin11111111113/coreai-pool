@@ -118,6 +118,28 @@ function CoreVisual() {
   );
 }
 
+/* ——— Персонаж-«ядро», флангует панель эфира; светится, когда говорит ——— */
+function CoreCharacter({ side, speaking, colorA, colorB }) {
+  const gradId = `char-${side}`;
+  return (
+    <div className={`char char-${side} ${speaking ? "speaking" : ""}`}>
+      <svg viewBox="0 0 100 120" aria-hidden="true">
+        <defs>
+          <radialGradient id={gradId} cx="38%" cy="30%">
+            <stop offset="0%" stopColor={colorA} />
+            <stop offset="100%" stopColor={colorB} />
+          </radialGradient>
+        </defs>
+        <ellipse cx="50" cy="108" rx="30" ry="7" fill="#000" opacity="0.25" />
+        <circle cx="50" cy="55" r="38" fill={`url(#${gradId})`} />
+        <circle cx="38" cy="50" r="6" fill="#0b1020" />
+        <circle cx="62" cy="50" r="6" fill="#0b1020" />
+        <path d="M36 68 Q50 78 64 68" stroke="#0b1020" strokeWidth="4" strokeLinecap="round" fill="none" />
+      </svg>
+    </div>
+  );
+}
+
 function App() {
   // ==================== СОСТОЯНИЕ ====================
   const [sessionId] = useState(getOrCreateSessionId);
@@ -138,6 +160,57 @@ function App() {
 
   const [activeTab, setActiveTab] = useState("chat");
   const [error, setError] = useState("");
+
+  // ==================== ЭФИР: ДЕБАТЫ CoreAI Fast vs CoreAI Pro ====================
+  const [debateTopic, setDebateTopic] = useState("");
+  const [debateMessages, setDebateMessages] = useState([]);
+  const [topicInput, setTopicInput] = useState("");
+  const [isSettingTopic, setIsSettingTopic] = useState(false);
+  const debateEndRef = useRef(null);
+
+  const loadDebate = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/debate/messages`);
+      if (res.ok) {
+        const data = await res.json();
+        setDebateTopic(data.topic || "");
+        setDebateMessages(data.messages || []);
+      }
+    } catch (err) {
+      console.error("Debate load error:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDebate();
+    const interval = setInterval(loadDebate, 5000);
+    return () => clearInterval(interval);
+  }, [loadDebate]);
+
+  useEffect(() => {
+    if (activeTab === "live") debateEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [debateMessages, activeTab]);
+
+  async function handleSetTopic(e) {
+    e.preventDefault();
+    if (!topicInput.trim() || isSettingTopic) return;
+    setIsSettingTopic(true);
+    try {
+      const res = await fetch(`${API_URL}/api/debate/topic`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: topicInput.trim() }),
+      });
+      if (res.ok) {
+        setTopicInput("");
+        await loadDebate();
+      }
+    } catch (err) {
+      console.error("Set topic error:", err);
+    } finally {
+      setIsSettingTopic(false);
+    }
+  }
 
   // ==================== ЗАГРУЗКА ДАННЫХ СЕССИИ ====================
 
@@ -280,6 +353,9 @@ function App() {
           <button className={`tab ${activeTab === "chat" ? "active" : ""}`} onClick={() => setActiveTab("chat")}>
             Чат
             {userData?.dailyRemaining !== undefined && <span className="tab-badge">{userData.dailyRemaining}</span>}
+          </button>
+          <button className={`tab ${activeTab === "live" ? "active" : ""}`} onClick={() => setActiveTab("live")}>
+            Эфир
           </button>
           <button className={`tab ${activeTab === "profile" ? "active" : ""}`} onClick={() => setActiveTab("profile")}>
             Кабинет
@@ -426,6 +502,75 @@ function App() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ЭФИР — CoreAI Fast и CoreAI Pro спорят между собой */}
+      {activeTab === "live" && (
+        <div className="page">
+          <div className="hero hero-compact">
+            <p className="hero-tagline">Эфир: два ядра спорят вживую</p>
+            <p className="hero-sub">Впишите тему — ядра обсудят именно её. Не впишете — спор идёт сам по себе.</p>
+          </div>
+
+          <form className="chat-input-form topic-form" onSubmit={handleSetTopic}>
+            <input
+              type="text"
+              className="chat-input"
+              placeholder="Тема для обсуждения..."
+              value={topicInput}
+              onChange={(e) => setTopicInput(e.target.value)}
+              disabled={isSettingTopic}
+              maxLength={200}
+            />
+            <button type="submit" className="btn btn-primary" disabled={isSettingTopic || !topicInput.trim()}>
+              {isSettingTopic ? "..." : "Обсудить"}
+            </button>
+          </form>
+
+          <div className="debate-topic-current">
+            Сейчас обсуждают: <strong>{debateTopic || "…"}</strong>
+          </div>
+
+          <div className="debate-arena">
+            <CoreCharacter
+              side="left"
+              speaking={debateMessages[debateMessages.length - 1]?.speaker === "fast"}
+              colorA="#a5f3fc"
+              colorB="#0e7490"
+            />
+
+            <div className="debate-panel">
+              <div className="debate-messages">
+                {debateMessages.length === 0 && (
+                  <div className="chat-empty">
+                    <div className="chat-empty-icon">✦</div>
+                    <p>Ядра готовятся начать...</p>
+                  </div>
+                )}
+                {debateMessages.map((m, i) =>
+                  m.speaker === "system" ? (
+                    <div className="debate-system" key={i}>
+                      {m.text}
+                    </div>
+                  ) : (
+                    <div key={i} className={`debate-msg ${m.speaker}`}>
+                      <div className="debate-msg-name">{m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}</div>
+                      <div className="debate-msg-bubble">{m.text}</div>
+                    </div>
+                  )
+                )}
+                <div ref={debateEndRef} />
+              </div>
+            </div>
+
+            <CoreCharacter
+              side="right"
+              speaking={debateMessages[debateMessages.length - 1]?.speaker === "pro"}
+              colorA="#e9d5ff"
+              colorB="#5b21b6"
+            />
           </div>
         </div>
       )}
