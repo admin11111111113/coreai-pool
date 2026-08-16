@@ -784,6 +784,8 @@ body::after {
 }
 
 .doc-btn {
+  display: inline-block;
+  text-decoration: none;
   padding: 6px 12px;
   border-radius: 8px;
   background: transparent;
@@ -795,6 +797,8 @@ body::after {
   cursor: pointer;
   transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
 }
+
+.doc-btn-inline { margin-top: 6px; }
 
 .doc-btn:hover:not(:disabled) {
   color: var(--signal);

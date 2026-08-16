@@ -220,7 +220,9 @@ function App() {
 
   useEffect(() => {
     loadDebateArchive();
-    const interval = setInterval(loadDebateArchive, 20000);
+    // Тот же темп, что у loadDebate — иначе документ по только что
+    // завершённой теме до 20 сек не появлялся у итоговых сообщений.
+    const interval = setInterval(loadDebateArchive, 5000);
     return () => clearInterval(interval);
   }, [loadDebateArchive]);
 
@@ -331,6 +333,13 @@ function App() {
     const params = new URLSearchParams({ finishedAt: String(round.finishedAt), speaker });
     if (download) params.set("download", "1");
     return `${API_URL}/api/debate/document.pdf?${params.toString()}`;
+  }
+
+  // Итоговое сообщение в живой ленте — не привязано к finishedAt напрямую
+  // (это просто одно из debateMessages), поэтому ищем архивный раунд, в
+  // котором есть сообщение с тем же timestamp.
+  function findArchivedRoundForMessage(ts) {
+    return debateArchive.find((r) => r.messages.some((mm) => mm.ts === ts));
   }
 
   // ======================== HELPERS ========================
@@ -522,6 +531,21 @@ function App() {
                         {m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}
                       </div>
                       <div className="debate-msg-bubble">{m.text}</div>
+                      {m.isConclusion &&
+                        (() => {
+                          const round = findArchivedRoundForMessage(m.ts);
+                          if (!round) return null;
+                          return (
+                            <a
+                              className="doc-btn doc-btn-inline"
+                              href={documentPdfUrl(round, m.speaker, false)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              📄 Документ
+                            </a>
+                          );
+                        })()}
                     </div>
                   )
                 )}
