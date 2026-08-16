@@ -610,27 +610,6 @@ function App() {
             )}
           </div>
 
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-label">Тариф</div>
-              <div className="stat-value">
-                {userData?.amount || 0} {TOKEN_SYMBOL}
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Лимит в день</div>
-              <div className="stat-value">{userData?.dailyLimit || 0}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Использовано сегодня</div>
-              <div className="stat-value">{userData?.dailyUsed || 0}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Осталось в периоде</div>
-              <div className="stat-value">{userData?.dailyRemaining ?? 0}</div>
-            </div>
-          </div>
-
           {userData?.isActive && (
             <div className="card">
               <h3>Запросы к ИИ сегодня</h3>

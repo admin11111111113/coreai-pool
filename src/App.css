@@ -786,46 +786,6 @@ body::after {
 
 .card > p { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
 
-/* ═══════════ СТАТИСТИКА ═══════════ */
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.stat-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  padding: 20px 18px;
-  backdrop-filter: blur(16px);
-  transition: border-color 0.35s var(--ease), transform 0.35s var(--ease);
-}
-
-.stat-card:hover {
-  border-color: var(--line-hi);
-  transform: translateY(-2px);
-}
-
-.stat-label {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  color: var(--text-mute);
-  margin-bottom: 9px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-.stat-value {
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 25px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  color: var(--text);
-}
-
 /* ═══════════ СТАТУС ═══════════ */
 
 .status-active,
@@ -1144,10 +1104,8 @@ body::after {
   .feature-grid, .steps-grid { gap: 12px; }
   .feature-grid, .steps, .faq { margin-bottom: 48px; }
   .tier-price { font-size: 34px; }
-  .stat-value { font-size: 22px; }
 }
 
 @media (max-width: 420px) {
-  .stats-grid { grid-template-columns: 1fr 1fr; }
   .tabs { top: 57px; }
 }
