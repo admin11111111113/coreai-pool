@@ -165,7 +165,6 @@ function App() {
   const [topicMood, setTopicMood] = useState("tough");
   const [topicNotice, setTopicNotice] = useState("");
   const [isSettingTopic, setIsSettingTopic] = useState(false);
-  const debateEndRef = useRef(null);
   const debateMessagesRef = useRef(null);
 
   // ==================== ФОН: пинг-понг воспроизведение видео ====================
@@ -268,7 +267,10 @@ function App() {
     const el = debateMessagesRef.current;
     if (!el || debateMessages.length === 0) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-    if (nearBottom) debateEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    // scrollIntoView здесь дёргало ВСЮ страницу наверх, если панель дебатов
+    // была ниже текущей прокрутки (браузер "приводит в вид" все скролл-контейнеры
+    // по цепочке, а не только этот). Двигаем scrollTop только у самого контейнера.
+    if (nearBottom) el.scrollTop = el.scrollHeight;
   }, [debateMessages]);
 
   async function handleSetTopic(e) {
@@ -534,7 +536,6 @@ function App() {
                     </div>
                   )
                 )}
-                <div ref={debateEndRef} />
               </div>
             </div>
           </div>
