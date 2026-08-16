@@ -106,19 +106,6 @@ function CoreVisual() {
       {/* блики */}
       <circle cx="140" cy="104" r="9" fill="#fff" opacity="0.5" />
       <circle cx="360" cy="104" r="9" fill="#fff" opacity="0.5" />
-
-      {/* частицы */}
-      <circle r="3.5" fill="#67e8f9">
-        <animateMotion dur="4.2s" repeatCount="indefinite" path="M150 115 C 200 62, 320 62, 370 115" />
-        <animate attributeName="opacity" values="0;1;1;0" dur="4.2s" repeatCount="indefinite" />
-      </circle>
-      <circle r="3.5" fill="#c4b5fd">
-        <animateMotion dur="5s" begin="-2s" repeatCount="indefinite" path="M370 115 C 320 168, 200 168, 150 115" />
-        <animate attributeName="opacity" values="0;1;1;0" dur="5s" begin="-2s" repeatCount="indefinite" />
-      </circle>
-      <circle r="2.5" fill="#93c5fd">
-        <animateMotion dur="6.4s" begin="-1s" repeatCount="indefinite" path="M92 115 A 168 62 0 1 0 428 115 A 168 62 0 1 0 92 115" />
-      </circle>
     </svg>
   );
 }
@@ -510,14 +497,18 @@ function App() {
           <div className="hero hero-compact">
             <div className="hero-eyebrow">
               <span className="pill">2 ядра</span>
-              CoreAI Fast + CoreAI Pro в одном окне
+              Точность через сверку, а не через одну догадку
             </div>
             <p className="hero-tagline">
-              Два ИИ-ядра в одном чате — с <em>автопереключением</em> при лимите
+              Мы запустили два ИИ-ядра ради <em>более точного</em> ответа
             </p>
             <p className="hero-sub">
-              Упёрлись в лимит одного ядра — сервер молча подставит второе. Вы просто продолжаете
-              разговор и получаете ответ.
+              Один и тот же вопрос одновременно разбирают два независимых ИИ-контура — похоже на
+              точное производство, где узел сверяют дважды, прежде чем выпустить готовую деталь.
+              Мы продолжаем наращивать эту схему дальше: новые ядра, более тонкая сверка результата,
+              быстрее итоговый ответ. А если хотите увидеть, как ядра спорят и уточняют друг друга
+              вживую, а не просто отвечают вам — загляните во вкладку «Эфир»: там они прямо сейчас
+              решают заданный вопрос между собой.
             </p>
 
             <div className="hero-visual">
@@ -526,12 +517,12 @@ function App() {
           </div>
 
           <div className="showcase">
-            <h3 className="steps-title">Пример диалога</h3>
+            <h3 className="steps-title">Пример: как ядра уточняют друг друга</h3>
             <div className="showcase-frame">
-              <div className="showcase-msg user">Сократи это письмо до трёх предложений</div>
-              <div className="showcase-msg ai">Готово. Смысл сохранён, тон — деловой. Прислать варианты покороче?</div>
-              <div className="showcase-msg user">Да, и переведи на английский</div>
-              <div className="showcase-msg ai">Вот английская версия + два варианта длины на выбор.</div>
+              <div className="showcase-msg user">Стоит вкладываться в акции сейчас?</div>
+              <div className="showcase-msg ai">CoreAI Fast: риск выше среднего по текущим мультипликаторам, но длинный горизонт его сглаживает.</div>
+              <div className="showcase-msg ai">CoreAI Pro: не соглашусь — сглаживает только при регулярных довложениях, разовый вход всё равно тайминг-риск.</div>
+              <div className="showcase-msg user">Так это хорошая идея или нет?</div>
             </div>
           </div>
 
