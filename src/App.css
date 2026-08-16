@@ -134,7 +134,7 @@ body::after {
 
 .page {
   width: 100%;
-  max-width: 1080px;
+  max-width: 1220px;
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -166,7 +166,7 @@ body::after {
   }
 
   .home-right {
-    width: 400px;
+    width: 480px;
     flex-shrink: 0;
     order: 2;
     position: sticky;
@@ -355,7 +355,7 @@ body::after {
 
 .hero-tagline {
   font-family: "Space Grotesk", "Inter", sans-serif;
-  font-size: clamp(30px, 5.4vw, 54px);
+  font-size: clamp(26px, 4.4vw, 44px);
   line-height: 1.08;
   font-weight: 700;
   letter-spacing: -0.035em;
@@ -378,8 +378,8 @@ body::after {
 .hero-sub {
   margin: 22px auto 0;
   max-width: 52ch;
-  font-size: 16.5px;
-  line-height: 1.62;
+  font-size: 14.5px;
+  line-height: 1.6;
   color: var(--text-dim);
 }
 
@@ -741,7 +741,7 @@ body::after {
 .steps-title,
 .section-heading h2 {
   font-family: "Space Grotesk", "Inter", sans-serif;
-  font-size: clamp(23px, 3.2vw, 32px);
+  font-size: clamp(20px, 2.6vw, 27px);
   font-weight: 700;
   letter-spacing: -0.03em;
   margin-bottom: 10px;
