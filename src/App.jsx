@@ -167,6 +167,7 @@ function App() {
   const [topicNotice, setTopicNotice] = useState("");
   const [isSettingTopic, setIsSettingTopic] = useState(false);
   const debateMessagesRef = useRef(null);
+  const stickToBottomRef = useRef(true);
 
   // ==================== ФОН: пинг-понг воспроизведение видео ====================
   // Обычный loop даёт резкий рывок в конце ролика. Вместо этого сами гоним
@@ -266,12 +267,21 @@ function App() {
 
   useEffect(() => {
     const el = debateMessagesRef.current;
+    if (!el) return;
+    // "Прилипание" к низу — как в мессенджерах: пока пользователь реально
+    // у самого низа, новые реплики докручивают вид; стоит чуть прокрутить
+    // вверх почитать — автопрокрутка выключается, пока не вернётся к низу сам.
+    function onScroll() {
+      stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 16;
+    }
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const el = debateMessagesRef.current;
     if (!el || debateMessages.length === 0) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-    // scrollIntoView здесь дёргало ВСЮ страницу наверх, если панель дебатов
-    // была ниже текущей прокрутки (браузер "приводит в вид" все скролл-контейнеры
-    // по цепочке, а не только этот). Двигаем scrollTop только у самого контейнера.
-    if (nearBottom) el.scrollTop = el.scrollHeight;
+    if (stickToBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [debateMessages]);
 
   async function handleSetTopic(e) {
