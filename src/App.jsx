@@ -120,6 +120,8 @@ function App() {
   const [debatePhase, setDebatePhase] = useState(null);
   const [debateRepliesLeft, setDebateRepliesLeft] = useState(0);
   const [debateQueueLength, setDebateQueueLength] = useState(0);
+  const [debateMoodFast, setDebateMoodFast] = useState("tough");
+  const [debateMoodPro, setDebateMoodPro] = useState("tough");
   const [debateArchive, setDebateArchive] = useState([]);
   const [topicInput, setTopicInput] = useState("");
   const [topicMood, setTopicMood] = useState("tough");
@@ -194,6 +196,8 @@ function App() {
         setDebatePhase(data.phase || null);
         setDebateRepliesLeft(data.repliesLeft || 0);
         setDebateQueueLength(data.queueLength || 0);
+        setDebateMoodFast(data.moodFast || "tough");
+        setDebateMoodPro(data.moodPro || "tough");
       }
     } catch (err) {
       console.error("Debate load error:", err);
@@ -327,6 +331,12 @@ function App() {
     navigator.clipboard.writeText(pendingPayment.receiverAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
+  }
+
+  function moodBadge(moodFast, moodPro) {
+    if (moodFast === "tough" && moodPro === "tough") return "🔥 Жёстко";
+    if (moodFast === "kind" && moodPro === "kind") return "🤝 Мягко";
+    return "🔥🤝 Вперемешку";
   }
 
   function speakerLabel(speaker) {
@@ -497,6 +507,7 @@ function App() {
 
             <div className="debate-topic-current">
               Сейчас обсуждают: <strong>{debateTopic || "…"}</strong>
+              <div style={{ marginTop: 4 }}>Настроение раунда: {moodBadge(debateMoodFast, debateMoodPro)}</div>
               {debateQueueLength > 0 && (
                 <div style={{ marginTop: 4 }}>В очереди тем: {debateQueueLength}</div>
               )}
