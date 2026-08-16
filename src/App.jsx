@@ -329,8 +329,20 @@ function App() {
     setTimeout(() => setCopied(false), 1800);
   }
 
-  function documentPdfUrl(round, speaker, download) {
-    const params = new URLSearchParams({ finishedAt: String(round.finishedAt), speaker });
+  function speakerLabel(speaker) {
+    if (speaker === "fast") return "CoreAI Fast";
+    if (speaker === "pro") return "CoreAI Pro";
+    return "Итог спора";
+  }
+
+  function speakerColor(speaker) {
+    if (speaker === "fast") return "var(--cyan)";
+    if (speaker === "pro") return "var(--violet)";
+    return "var(--signal)";
+  }
+
+  function documentPdfUrl(round, download) {
+    const params = new URLSearchParams({ finishedAt: String(round.finishedAt) });
     if (download) params.set("download", "1");
     return `${API_URL}/api/debate/document.pdf?${params.toString()}`;
   }
@@ -444,30 +456,16 @@ function App() {
                           .filter((m) => m.isConclusion)
                           .map((m, j) => (
                             <p key={j} style={{ marginTop: 8 }}>
-                              <span
-                                style={{
-                                  fontFamily: "var(--mono)",
-                                  fontSize: 11,
-                                  color: m.speaker === "fast" ? "var(--cyan)" : "var(--violet)",
-                                }}
-                              >
-                                {m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}:
+                              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: speakerColor(m.speaker) }}>
+                                {speakerLabel(m.speaker)}:
                               </span>{" "}
                               {m.text}
                             </p>
                           ))}
                         <div className="doc-buttons">
-                          {["fast", "pro"].map((speaker) => (
-                            <a
-                              key={speaker}
-                              className="doc-btn"
-                              href={documentPdfUrl(round, speaker, false)}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {`📄 Документ ${speaker === "fast" ? "Fast" : "Pro"}`}
-                            </a>
-                          ))}
+                          <a className="doc-btn" href={documentPdfUrl(round, false)} target="_blank" rel="noreferrer">
+                            📄 Документ
+                          </a>
                         </div>
                       </div>
                     ))}
@@ -505,8 +503,11 @@ function App() {
               {!debateIsDefaultTopic && debatePhase === "replies" && (
                 <div style={{ marginTop: 4 }}>Разбор вашей темы — осталось реплик: {debateRepliesLeft}</div>
               )}
-              {!debateIsDefaultTopic && (debatePhase === "conclusion-fast" || debatePhase === "conclusion-pro") && (
-                <div style={{ marginTop: 4 }}>Ядра подводят итоги...</div>
+              {!debateIsDefaultTopic && debatePhase === "joint-draft" && (
+                <div style={{ marginTop: 4 }}>CoreAI Fast пишет черновик общего итога...</div>
+              )}
+              {!debateIsDefaultTopic && debatePhase === "joint-final" && (
+                <div style={{ marginTop: 4 }}>CoreAI Pro дорабатывает общий итог...</div>
               )}
               {userData?.isActive && <div style={{ marginTop: 4 }}>Осталось тем в этом периоде: {userData?.dailyRemaining ?? "—"}</div>}
             </div>
@@ -525,10 +526,13 @@ function App() {
                       {m.text}
                     </div>
                   ) : (
-                    <div key={i} className={`debate-msg ${m.speaker} ${m.isConclusion ? "conclusion" : ""}`}>
-                      <div className="debate-msg-name">
-                        {m.isConclusion ? "Итог — " : ""}
-                        {m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}
+                    <div
+                      key={i}
+                      className={`debate-msg ${m.speaker} ${m.isConclusion ? "conclusion" : ""} ${m.isDraft ? "draft" : ""}`}
+                    >
+                      <div className="debate-msg-name" style={{ color: speakerColor(m.speaker) }}>
+                        {m.isDraft ? "Черновик итога — " : m.isConclusion ? "🤝 " : ""}
+                        {speakerLabel(m.speaker)}
                       </div>
                       <div className="debate-msg-bubble">{m.text}</div>
                       {m.isConclusion &&
@@ -538,7 +542,7 @@ function App() {
                           return (
                             <a
                               className="doc-btn doc-btn-inline"
-                              href={documentPdfUrl(round, m.speaker, false)}
+                              href={documentPdfUrl(round, false)}
                               target="_blank"
                               rel="noreferrer"
                             >
@@ -637,7 +641,10 @@ function App() {
             <h3>Честно об ограничениях</h3>
             <p>Оба ядра могут ошибаться в одну сторону. Спор снижает риск, но не отменяет проверку фактов.</p>
             <p>Это не финансовая, юридическая и не медицинская консультация — это два взгляда на вопрос, а не рекомендация.</p>
-            <p>Итог не выносится. Ядра не голосуют и не объявляют победителя: вывод остаётся за вами. В этом смысл.</p>
+            <p>
+              В конце спора ядра сходятся на одном общем выводе — это не голосование за победителя, а честная
+              попытка учесть сильные стороны обеих позиций. Проверять его на своей ситуации всё равно вам.
+            </p>
           </div>
 
           </div>
@@ -785,7 +792,7 @@ function App() {
               <div className="tier-requests">
                 ≈ {computeDailyLimit(tierAmount)} запросов/день
                 <div style={{ fontSize: 12, marginTop: 6, color: "var(--text-mute)" }}>
-                  3 {TOKEN_SYMBOL} = один полный разбор темы (8 реплик + 2 итога)
+                  3 {TOKEN_SYMBOL} = один полный разбор темы (16 реплик + общий итог)
                 </div>
               </div>
               <button
