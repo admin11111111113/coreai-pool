@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
-import { API_URL, TOKEN_SYMBOL, NETWORK_LABEL, SUBSCRIPTION_TIERS } from "./config.js";
+import { API_URL, TOKEN_SYMBOL, NETWORK_LABEL, TIER_MIN_AMOUNT, TIER_MAX_AMOUNT, computeDailyLimit } from "./config.js";
 import "./App.css";
 
 const FAQ_ITEMS = [
@@ -107,7 +107,7 @@ function App() {
   const [pendingPayment, setPendingPayment] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [tierIndex, setTierIndex] = useState(1);
+  const [tierAmount, setTierAmount] = useState(30);
 
   const [activeTab, setActiveTab] = useState("chat");
   const [error, setError] = useState("");
@@ -115,6 +115,8 @@ function App() {
   // ==================== ЭФИР: ДЕБАТЫ CoreAI Fast vs CoreAI Pro ====================
   const [debateTopic, setDebateTopic] = useState("");
   const [debateMessages, setDebateMessages] = useState([]);
+  const [debateCustomPhase, setDebateCustomPhase] = useState(null);
+  const [debateCustomRepliesLeft, setDebateCustomRepliesLeft] = useState(0);
   const [topicInput, setTopicInput] = useState("");
   const [isSettingTopic, setIsSettingTopic] = useState(false);
   const debateEndRef = useRef(null);
@@ -182,6 +184,8 @@ function App() {
         const data = await res.json();
         setDebateTopic(data.topic || "");
         setDebateMessages(data.messages || []);
+        setDebateCustomPhase(data.customPhase || null);
+        setDebateCustomRepliesLeft(data.customRepliesLeft || 0);
       }
     } catch (err) {
       console.error("Debate load error:", err);
@@ -250,14 +254,14 @@ function App() {
 
   // ==================== ПОКУПКА ПОДПИСКИ ====================
 
-  async function handleSubscribe(tierIndex) {
+  async function handleSubscribe(amount) {
     setIsSubscribing(true);
     setError("");
     try {
       const res = await fetch(`${API_URL}/api/reserve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, tierIndex }),
+        body: JSON.stringify({ sessionId, amount }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -359,6 +363,12 @@ function App() {
 
             <div className="debate-topic-current">
               Сейчас обсуждают: <strong>{debateTopic || "…"}</strong>
+              {debateCustomPhase === "replies" && (
+                <div style={{ marginTop: 4 }}>Разбор вашей темы — осталось реплик: {debateCustomRepliesLeft}</div>
+              )}
+              {(debateCustomPhase === "conclusion-fast" || debateCustomPhase === "conclusion-pro") && (
+                <div style={{ marginTop: 4 }}>Ядра подводят итоги...</div>
+              )}
               {userData?.isActive && <div style={{ marginTop: 4 }}>Осталось запросов сегодня: {userData?.dailyRemaining ?? "—"}</div>}
             </div>
 
@@ -376,8 +386,11 @@ function App() {
                       {m.text}
                     </div>
                   ) : (
-                    <div key={i} className={`debate-msg ${m.speaker}`}>
-                      <div className="debate-msg-name">{m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}</div>
+                    <div key={i} className={`debate-msg ${m.speaker} ${m.isConclusion ? "conclusion" : ""}`}>
+                      <div className="debate-msg-name">
+                        {m.isConclusion ? "Итог — " : ""}
+                        {m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}
+                      </div>
                       <div className="debate-msg-bubble">{m.text}</div>
                     </div>
                   )
@@ -662,28 +675,32 @@ function App() {
 
           {!pendingPayment ? (
             <div className="pricing-slider-card card">
-              <div className="tier-name">{SUBSCRIPTION_TIERS[tierIndex].label}</div>
               <div className="tier-price">
-                {SUBSCRIPTION_TIERS[tierIndex].amount} {TOKEN_SYMBOL}
+                {tierAmount} {TOKEN_SYMBOL}
                 <span className="tier-period">/30 дней</span>
               </div>
               <input
                 type="range"
-                min={0}
-                max={SUBSCRIPTION_TIERS.length - 1}
+                min={TIER_MIN_AMOUNT}
+                max={TIER_MAX_AMOUNT}
                 step={1}
-                value={tierIndex}
-                onChange={(e) => setTierIndex(Number(e.target.value))}
+                value={tierAmount}
+                onChange={(e) => setTierAmount(Number(e.target.value))}
                 className="pricing-slider"
               />
               <div className="pricing-slider-scale">
-                <span>{SUBSCRIPTION_TIERS[0].amount} {TOKEN_SYMBOL}</span>
-                <span>{SUBSCRIPTION_TIERS[SUBSCRIPTION_TIERS.length - 1].amount} {TOKEN_SYMBOL}</span>
+                <span>{TIER_MIN_AMOUNT} {TOKEN_SYMBOL}</span>
+                <span>{TIER_MAX_AMOUNT} {TOKEN_SYMBOL}</span>
               </div>
-              <div className="tier-requests">{SUBSCRIPTION_TIERS[tierIndex].requests}</div>
+              <div className="tier-requests">
+                ≈ {computeDailyLimit(tierAmount)} запросов/день
+                <div style={{ fontSize: 12, marginTop: 6, color: "var(--text-mute)" }}>
+                  {TIER_MIN_AMOUNT} {TOKEN_SYMBOL} = один полный разбор темы (8 реплик + 2 итога)
+                </div>
+              </div>
               <button
                 className="btn btn-primary btn-large"
-                onClick={() => handleSubscribe(tierIndex)}
+                onClick={() => handleSubscribe(tierAmount)}
                 disabled={isSubscribing}
               >
                 {isSubscribing ? "..." : "Оформить"}
