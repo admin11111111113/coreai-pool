@@ -33,45 +33,6 @@ function shortTx(hash) {
   return hash.slice(0, 8) + "..." + hash.slice(-6);
 }
 
-// ==================== ДОКУМЕНТ: экспорт в .rtf (открывается Word'ом) ====================
-// RTF в кодировке \ansi не поддерживает кириллицу напрямую — экранируем
-// каждый не-ASCII символ юникодной escape-последовательностью \uN.
-function escapeRtf(str) {
-  let out = "";
-  for (const ch of str) {
-    const code = ch.codePointAt(0);
-    if (ch === "\\" || ch === "{" || ch === "}") {
-      out += "\\" + ch;
-    } else if (ch === "\n") {
-      out += "\\par\n";
-    } else if (code < 128) {
-      out += ch;
-    } else if (code > 0xffff) {
-      out += "?"; // редкие символы вне BMP — не встречаются в наших текстах
-    } else {
-      const signed = code > 32767 ? code - 65536 : code;
-      out += `\\u${signed}?`;
-    }
-  }
-  return out;
-}
-
-function buildRtfDocument(title, body) {
-  return `{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Arial;}}\\f0\\fs28\\b ${escapeRtf(title)}\\b0\\par\\fs22\\par ${escapeRtf(body)}}`;
-}
-
-function downloadRtf(filename, title, body) {
-  const rtf = buildRtfDocument(title, body);
-  const blob = new Blob([rtf], { type: "application/rtf" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
 
 function App() {
   // ==================== СОСТОЯНИЕ ====================
@@ -160,7 +121,6 @@ function App() {
   const [debateRepliesLeft, setDebateRepliesLeft] = useState(0);
   const [debateQueueLength, setDebateQueueLength] = useState(0);
   const [debateArchive, setDebateArchive] = useState([]);
-  const [docLoadingKey, setDocLoadingKey] = useState(null);
   const [docPreview, setDocPreview] = useState(null);
   const [topicInput, setTopicInput] = useState("");
   const [topicMood, setTopicMood] = useState("tough");
@@ -368,28 +328,14 @@ function App() {
     setTimeout(() => setCopied(false), 1800);
   }
 
-  async function handleOpenDocument(round, speaker) {
-    const key = `${round.finishedAt}-${speaker}`;
-    if (docLoadingKey) return;
-    setDocLoadingKey(key);
-    setError("");
-    try {
-      const res = await fetch(`${API_URL}/api/debate/document`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ finishedAt: round.finishedAt, speaker }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || data.error || "Не удалось сгенерировать документ");
-        return;
-      }
-      setDocPreview({ round, speaker, text: data.text });
-    } catch (err) {
-      setError("Ошибка: " + err.message);
-    } finally {
-      setDocLoadingKey(null);
-    }
+  function documentPdfUrl(round, speaker, download) {
+    const params = new URLSearchParams({ finishedAt: String(round.finishedAt), speaker });
+    if (download) params.set("download", "1");
+    return `${API_URL}/api/debate/document.pdf?${params.toString()}`;
+  }
+
+  function handleOpenDocument(round, speaker) {
+    setDocPreview({ round, speaker });
   }
 
   function downloadPreviewedDocument() {
@@ -694,22 +640,16 @@ function App() {
                           </p>
                         ))}
                       <div className="doc-buttons">
-                        {["fast", "pro"].map((speaker) => {
-                          const key = `${round.finishedAt}-${speaker}`;
-                          return (
-                            <button
-                              key={speaker}
-                              type="button"
-                              className="doc-btn"
-                              onClick={() => handleOpenDocument(round, speaker)}
-                              disabled={!!docLoadingKey}
-                            >
-                              {docLoadingKey === key
-                                ? "..."
-                                : `📄 Документ ${speaker === "fast" ? "Fast" : "Pro"}`}
-                            </button>
-                          );
-                        })}
+                        {["fast", "pro"].map((speaker) => (
+                          <button
+                            key={speaker}
+                            type="button"
+                            className="doc-btn"
+                            onClick={() => handleOpenDocument(round, speaker)}
+                          >
+                            {`📄 Документ ${speaker === "fast" ? "Fast" : "Pro"}`}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -962,14 +902,31 @@ function App() {
                 ✕
               </button>
             </div>
-            <div className="doc-modal-body">{docPreview.text}</div>
+            <iframe
+              className="doc-modal-frame"
+              src={documentPdfUrl(docPreview.round, docPreview.speaker, false)}
+              title="Документ"
+            />
             <p className="doc-modal-disclaimer">
-              Позиция ИИ по своим данным, без живой проверки в интернете — источники и цифры проверяйте сами.
+              Если PDF не показался (иногда бывает на мобильных) — откройте в новой вкладке. Позиция ИИ по своим
+              данным, без живой проверки в интернете — источники и цифры проверяйте сами.
             </p>
             <div className="doc-modal-footer">
-              <button type="button" className="btn btn-primary" onClick={downloadPreviewedDocument}>
-                Скачать .rtf (открывается в Word)
-              </button>
+              <a
+                className="btn btn-primary"
+                href={documentPdfUrl(docPreview.round, docPreview.speaker, true)}
+                download
+              >
+                Скачать PDF
+              </a>
+              <a
+                className="btn btn-ghost"
+                href={documentPdfUrl(docPreview.round, docPreview.speaker, false)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Открыть в новой вкладке
+              </a>
               <button type="button" className="btn btn-ghost" onClick={() => setDocPreview(null)}>
                 Закрыть
               </button>

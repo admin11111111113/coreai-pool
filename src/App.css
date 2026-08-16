@@ -913,6 +913,9 @@ body::after {
 /* ═══════════ КНОПКИ ═══════════ */
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 12px 24px;
   border: none;
   border-radius: 11px;
@@ -920,6 +923,7 @@ body::after {
   font-size: 14.5px;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
   transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease), opacity 0.22s var(--ease);
   letter-spacing: -0.005em;
 }
@@ -1016,14 +1020,12 @@ body::after {
 
 .doc-modal-close:hover { color: var(--text); border-color: var(--line-hi); }
 
-.doc-modal-body {
+.doc-modal-frame {
   flex: 1;
-  overflow-y: auto;
-  padding: 20px 22px;
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--text-dim);
-  white-space: pre-wrap;
+  min-height: 0;
+  width: 100%;
+  border: none;
+  background: #fff;
 }
 
 .doc-modal-disclaimer {
@@ -1034,6 +1036,7 @@ body::after {
 
 .doc-modal-footer {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 16px 22px 20px;
 }
