@@ -118,8 +118,11 @@ function App() {
   const [debateIsDefaultTopic, setDebateIsDefaultTopic] = useState(true);
   const [debatePhase, setDebatePhase] = useState(null);
   const [debateRepliesLeft, setDebateRepliesLeft] = useState(0);
+  const [debateQueueLength, setDebateQueueLength] = useState(0);
   const [debateArchive, setDebateArchive] = useState([]);
   const [topicInput, setTopicInput] = useState("");
+  const [topicMood, setTopicMood] = useState("tough");
+  const [topicNotice, setTopicNotice] = useState("");
   const [isSettingTopic, setIsSettingTopic] = useState(false);
   const debateEndRef = useRef(null);
   const debateMessagesRef = useRef(null);
@@ -189,6 +192,7 @@ function App() {
         setDebateIsDefaultTopic(data.isDefaultTopic !== false);
         setDebatePhase(data.phase || null);
         setDebateRepliesLeft(data.repliesLeft || 0);
+        setDebateQueueLength(data.queueLength || 0);
       }
     } catch (err) {
       console.error("Debate load error:", err);
@@ -235,11 +239,16 @@ function App() {
       const res = await fetch(`${API_URL}/api/debate/topic`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, topic: topicInput.trim() }),
+        body: JSON.stringify({ sessionId, topic: topicInput.trim(), mood: topicMood }),
       });
       const data = await res.json();
       if (res.ok) {
         setTopicInput("");
+        setTopicNotice(
+          data.queued
+            ? `Тема встала в очередь (позиция ${data.position}) — начнётся, как только доспорит текущая тема.`
+            : ""
+        );
         await loadDebate();
         await loadUserData();
       } else {
@@ -378,12 +387,35 @@ function App() {
               </button>
             </form>
 
+            <div className="mood-picker">
+              {[
+                { key: "tough", label: "🔥 Жёстко" },
+                { key: "kind", label: "🤝 Мягко" },
+                { key: "mixed", label: "🔥🤝 Вперемешку" },
+              ].map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  className={`mood-btn ${topicMood === m.key ? "active" : ""}`}
+                  onClick={() => setTopicMood(m.key)}
+                  disabled={isSettingTopic || !userData?.isActive}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
             {!userData?.isActive && (
               <div className="chat-blocked">Оформите подписку, чтобы задавать свою тему — вкладка «Кабинет»</div>
             )}
 
+            {topicNotice && <div className="chat-blocked">{topicNotice}</div>}
+
             <div className="debate-topic-current">
               Сейчас обсуждают: <strong>{debateTopic || "…"}</strong>
+              {debateQueueLength > 0 && (
+                <div style={{ marginTop: 4 }}>В очереди тем: {debateQueueLength}</div>
+              )}
               {!debateIsDefaultTopic && debatePhase === "replies" && (
                 <div style={{ marginTop: 4 }}>Разбор вашей темы — осталось реплик: {debateRepliesLeft}</div>
               )}
