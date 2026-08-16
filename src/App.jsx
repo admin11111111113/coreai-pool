@@ -28,6 +28,11 @@ function getOrCreateSessionId() {
   return id;
 }
 
+function shortTx(hash) {
+  if (!hash) return "";
+  return hash.slice(0, 8) + "..." + hash.slice(-6);
+}
+
 /* ——— Визуал: два ИИ-ядра, связанные потоком ——— */
 function CoreVisual() {
   return (
@@ -142,7 +147,71 @@ function CoreCharacter({ side, speaking, colorA, colorB }) {
 
 function App() {
   // ==================== СОСТОЯНИЕ ====================
-  const [sessionId] = useState(getOrCreateSessionId);
+  const [sessionId, setSessionId] = useState(getOrCreateSessionId);
+
+  // ==================== АККАУНТ (email+пароль — для восстановления sessionId) ====================
+  const [authEmail, setAuthEmail] = useState(() => localStorage.getItem("coreai_account_email") || "");
+  const [authMode, setAuthMode] = useState("login");
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [isAuthing, setIsAuthing] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+
+  function persistSessionId(id) {
+    localStorage.setItem("coreai_session_id", id);
+    setSessionId(id);
+  }
+
+  async function handleAuth(e) {
+    e.preventDefault();
+    if (!emailInput.trim() || !passwordInput || isAuthing) return;
+    setIsAuthing(true);
+    setError("");
+    try {
+      const endpoint = authMode === "register" ? "/api/register" : "/api/login";
+      const body =
+        authMode === "register"
+          ? { email: emailInput.trim(), password: passwordInput, sessionId }
+          : { email: emailInput.trim(), password: passwordInput };
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || data.error || "Ошибка входа");
+      } else {
+        persistSessionId(data.sessionId);
+        localStorage.setItem("coreai_account_email", data.email);
+        setAuthEmail(data.email);
+        setEmailInput("");
+        setPasswordInput("");
+      }
+    } catch (err) {
+      setError("Ошибка: " + err.message);
+    } finally {
+      setIsAuthing(false);
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("coreai_account_email");
+    setAuthEmail("");
+  }
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/session/${sessionId}/history`);
+      if (res.ok) setPaymentHistory((await res.json()).history || []);
+    } catch (err) {
+      console.error("History load error:", err);
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   const [userData, setUserData] = useState(null);
   const [poolStats, setPoolStats] = useState(null);
@@ -590,6 +659,60 @@ function App() {
           </div>
 
           <div className="card">
+            <h3>Аккаунт</h3>
+            {authEmail ? (
+              <div className="status-active">
+                <span className="status-dot green"></span>
+                Вы вошли как {authEmail}
+                <button className="btn btn-primary btn-sm" onClick={handleLogout} style={{ marginLeft: "auto" }}>
+                  Выйти
+                </button>
+              </div>
+            ) : (
+              <>
+                <p style={{ fontSize: 13 }}>
+                  Привяжите email и пароль, чтобы не потерять подписку и историю платежей при смене устройства или
+                  очистке браузера.
+                </p>
+                <form className="chat-input-form topic-form" onSubmit={handleAuth} style={{ flexWrap: "wrap" }}>
+                  <input
+                    type="email"
+                    className="chat-input"
+                    placeholder="Email"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    disabled={isAuthing}
+                  />
+                  <input
+                    type="password"
+                    className="chat-input"
+                    placeholder="Пароль (мин. 6 символов)"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    disabled={isAuthing}
+                  />
+                  <button type="submit" className="btn btn-primary" disabled={isAuthing || !emailInput.trim() || !passwordInput}>
+                    {isAuthing ? "..." : authMode === "register" ? "Зарегистрироваться" : "Войти"}
+                  </button>
+                </form>
+                <p style={{ fontSize: 12, marginTop: 10 }}>
+                  {authMode === "register" ? "Уже есть аккаунт? " : "Ещё нет аккаунта? "}
+                  <a
+                    href="#"
+                    style={{ color: "var(--cyan)" }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setAuthMode(authMode === "register" ? "login" : "register");
+                    }}
+                  >
+                    {authMode === "register" ? "Войти" : "Зарегистрироваться"}
+                  </a>
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="card">
             <h3>Ваша подписка</h3>
             {userData?.isActive ? (
               <div className="status-active">
@@ -639,6 +762,27 @@ function App() {
               <div className="progress-label">
                 {userData.dailyUsed} / {userData.dailyLimit} использовано
               </div>
+            </div>
+          )}
+
+          {userData?.isActive && (
+            <div className="card">
+              <h3>Остаток за весь период (30 дней)</h3>
+              <div className="progress-bar-container">
+                <div
+                  className="progress-bar"
+                  style={{
+                    width: `${userData.periodAllowance > 0 ? (userData.periodUsed / userData.periodAllowance) * 100 : 0}%`,
+                  }}
+                ></div>
+              </div>
+              <div className="progress-label">
+                {userData.periodUsed} / {userData.periodAllowance} использовано
+                {userData.rolledOver > 0 && ` (включая ${userData.rolledOver} перенесённых с прошлого периода)`}
+              </div>
+              <p style={{ fontSize: 12, marginTop: 8 }}>
+                Не использовали лимит — не сгорает. При продлении подписки остаток переносится в новый период.
+              </p>
             </div>
           )}
 
@@ -697,6 +841,47 @@ function App() {
               <p style={{ fontSize: 13, marginTop: 14 }}>
                 Как только платёж найдётся в блокчейне — подписка включится автоматически (проверяем каждые ~30 сек).
               </p>
+            </div>
+          )}
+
+          {paymentHistory.length > 0 && (
+            <div className="card">
+              <h3>История платежей</h3>
+              <div className="admin-users-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Дата</th>
+                      <th>Сумма</th>
+                      <th>Действует до</th>
+                      <th>Перенесено</th>
+                      <th>Tx</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paymentHistory.map((h, i) => (
+                      <tr key={i}>
+                        <td>{formatDate(h.activatedAt)}</td>
+                        <td>
+                          {h.amount} {TOKEN_SYMBOL}
+                        </td>
+                        <td>{formatDate(h.expiresAt)}</td>
+                        <td>{h.rolledOver || 0}</td>
+                        <td>
+                          <a
+                            href={`https://bscscan.com/tx/${h.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={h.txHash}
+                          >
+                            {shortTx(h.txHash)}
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
