@@ -161,6 +161,7 @@ function App() {
   const [debateQueueLength, setDebateQueueLength] = useState(0);
   const [debateArchive, setDebateArchive] = useState([]);
   const [docLoadingKey, setDocLoadingKey] = useState(null);
+  const [docPreview, setDocPreview] = useState(null);
   const [topicInput, setTopicInput] = useState("");
   const [topicMood, setTopicMood] = useState("tough");
   const [topicNotice, setTopicNotice] = useState("");
@@ -275,7 +276,8 @@ function App() {
 
   async function handleSetTopic(e) {
     e.preventDefault();
-    if (!topicInput.trim() || isSettingTopic || !userData?.isActive) return;
+    // ВРЕМЕННО (тестирование) — гейт по подписке убран, см. TODO у backend /api/debate/topic.
+    if (!topicInput.trim() || isSettingTopic) return;
     setIsSettingTopic(true);
     setError("");
     try {
@@ -356,7 +358,7 @@ function App() {
     setTimeout(() => setCopied(false), 1800);
   }
 
-  async function handleDownloadDocument(round, speaker) {
+  async function handleOpenDocument(round, speaker) {
     const key = `${round.finishedAt}-${speaker}`;
     if (docLoadingKey) return;
     setDocLoadingKey(key);
@@ -372,13 +374,18 @@ function App() {
         setError(data.message || data.error || "Не удалось сгенерировать документ");
         return;
       }
-      const name = speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro";
-      downloadRtf(`${name} — ${round.topic.slice(0, 60)}.rtf`, `${name}: ${round.topic}`, data.text);
+      setDocPreview({ round, speaker, text: data.text });
     } catch (err) {
       setError("Ошибка: " + err.message);
     } finally {
       setDocLoadingKey(null);
     }
+  }
+
+  function downloadPreviewedDocument() {
+    if (!docPreview) return;
+    const name = docPreview.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro";
+    downloadRtf(`${name} — ${docPreview.round.topic.slice(0, 60)}.rtf`, `${name}: ${docPreview.round.topic}`, docPreview.text);
   }
 
   // ======================== HELPERS ========================
@@ -463,14 +470,10 @@ function App() {
                 placeholder="Впишите тему для обсуждения..."
                 value={topicInput}
                 onChange={(e) => setTopicInput(e.target.value)}
-                disabled={isSettingTopic || !userData?.isActive}
+                disabled={isSettingTopic}
                 maxLength={200}
               />
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isSettingTopic || !topicInput.trim() || !userData?.isActive}
-              >
+              <button type="submit" className="btn btn-primary" disabled={isSettingTopic || !topicInput.trim()}>
                 {isSettingTopic ? "..." : "Обсудить"}
               </button>
             </form>
@@ -486,16 +489,14 @@ function App() {
                   type="button"
                   className={`mood-btn ${topicMood === m.key ? "active" : ""}`}
                   onClick={() => setTopicMood(m.key)}
-                  disabled={isSettingTopic || !userData?.isActive}
+                  disabled={isSettingTopic}
                 >
                   {m.label}
                 </button>
               ))}
             </div>
 
-            {!userData?.isActive && (
-              <div className="chat-blocked">Оформите подписку, чтобы задавать свою тему — вкладка «Кабинет»</div>
-            )}
+            {/* ВРЕМЕННО (тестирование) — блокировка по подписке скрыта, см. TODO у backend /api/debate/topic. */}
 
             {topicNotice && <div className="chat-blocked">{topicNotice}</div>}
 
@@ -690,7 +691,7 @@ function App() {
                               key={speaker}
                               type="button"
                               className="doc-btn"
-                              onClick={() => handleDownloadDocument(round, speaker)}
+                              onClick={() => handleOpenDocument(round, speaker)}
                               disabled={!!docLoadingKey}
                             >
                               {docLoadingKey === key
@@ -939,6 +940,33 @@ function App() {
       <footer className="footer">
         <div className="page footer-inner">© CoreAI Pool · Оплата USDT (BEP-20, BSC) · Тарифы рассчитаны от стоимости API</div>
       </footer>
+
+      {docPreview && (
+        <div className="doc-modal-overlay" onClick={() => setDocPreview(null)}>
+          <div className="doc-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="doc-modal-header">
+              <h3>
+                {docPreview.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}: {docPreview.round.topic}
+              </h3>
+              <button type="button" className="doc-modal-close" onClick={() => setDocPreview(null)}>
+                ✕
+              </button>
+            </div>
+            <div className="doc-modal-body">{docPreview.text}</div>
+            <p className="doc-modal-disclaimer">
+              Позиция ИИ по своим данным, без живой проверки в интернете — источники и цифры проверяйте сами.
+            </p>
+            <div className="doc-modal-footer">
+              <button type="button" className="btn btn-primary" onClick={downloadPreviewedDocument}>
+                Скачать .rtf (открывается в Word)
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setDocPreview(null)}>
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
