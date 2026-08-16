@@ -292,7 +292,7 @@ function App() {
           <div className="hero hero-compact">
             <div className="hero-eyebrow">
               <span className="pill">2 ядра</span>
-              Gemini Flash + Llama 3.1 в одном окне
+              CoreAI Fast + CoreAI Pro в одном окне
             </div>
             <p className="hero-tagline">
               Два ИИ-ядра в одном чате — с <em>автопереключением</em> при лимите
