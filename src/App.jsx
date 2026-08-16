@@ -33,28 +33,6 @@ function shortTx(hash) {
   return hash.slice(0, 8) + "..." + hash.slice(-6);
 }
 
-/* ——— Персонаж-«ядро», флангует панель эфира; светится, когда говорит ——— */
-function CoreCharacter({ side, speaking, small, colorA, colorB }) {
-  const gradId = `char-${small ? "sm-" : ""}${side}`;
-  return (
-    <div className={`char char-${side} ${speaking ? "speaking" : ""}`}>
-      <svg viewBox="0 0 100 120" aria-hidden="true">
-        <defs>
-          <radialGradient id={gradId} cx="38%" cy="30%">
-            <stop offset="0%" stopColor={colorA} />
-            <stop offset="100%" stopColor={colorB} />
-          </radialGradient>
-        </defs>
-        <ellipse cx="50" cy="108" rx="30" ry="7" fill="#000" opacity="0.25" />
-        <circle cx="50" cy="55" r="38" fill={`url(#${gradId})`} />
-        <circle cx="38" cy="50" r="6" fill="#0b1020" />
-        <circle cx="62" cy="50" r="6" fill="#0b1020" />
-        <path d="M36 68 Q50 78 64 68" stroke="#0b1020" strokeWidth="4" strokeLinecap="round" fill="none" />
-      </svg>
-    </div>
-  );
-}
-
 function App() {
   // ==================== СОСТОЯНИЕ ====================
   const [sessionId, setSessionId] = useState(getOrCreateSessionId);
@@ -328,44 +306,28 @@ function App() {
               {userData?.isActive && <div style={{ marginTop: 4 }}>Осталось запросов сегодня: {userData?.dailyRemaining ?? "—"}</div>}
             </div>
 
-            <div className="debate-arena">
-              <CoreCharacter
-                side="left"
-                speaking={debateMessages[debateMessages.length - 1]?.speaker === "fast"}
-                colorA="#a5f3fc"
-                colorB="#0e7490"
-              />
-
-              <div className="debate-panel">
-                <div className="debate-messages">
-                  {debateMessages.length === 0 && (
-                    <div className="chat-empty">
-                      <div className="chat-empty-icon">✦</div>
-                      <p>Ядра готовятся начать...</p>
+            <div className="debate-panel">
+              <div className="debate-messages">
+                {debateMessages.length === 0 && (
+                  <div className="chat-empty">
+                    <div className="chat-empty-icon">✦</div>
+                    <p>Ядра готовятся начать...</p>
+                  </div>
+                )}
+                {debateMessages.map((m, i) =>
+                  m.speaker === "system" ? (
+                    <div className="debate-system" key={i}>
+                      {m.text}
                     </div>
-                  )}
-                  {debateMessages.map((m, i) =>
-                    m.speaker === "system" ? (
-                      <div className="debate-system" key={i}>
-                        {m.text}
-                      </div>
-                    ) : (
-                      <div key={i} className={`debate-msg ${m.speaker}`}>
-                        <div className="debate-msg-name">{m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}</div>
-                        <div className="debate-msg-bubble">{m.text}</div>
-                      </div>
-                    )
-                  )}
-                  <div ref={debateEndRef} />
-                </div>
+                  ) : (
+                    <div key={i} className={`debate-msg ${m.speaker}`}>
+                      <div className="debate-msg-name">{m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}</div>
+                      <div className="debate-msg-bubble">{m.text}</div>
+                    </div>
+                  )
+                )}
+                <div ref={debateEndRef} />
               </div>
-
-              <CoreCharacter
-                side="right"
-                speaking={debateMessages[debateMessages.length - 1]?.speaker === "pro"}
-                colorA="#e9d5ff"
-                colorB="#5b21b6"
-              />
             </div>
           </div>
           </div>
@@ -380,11 +342,122 @@ function App() {
               Спросите — и два ИИ разберут это между собой
             </p>
             <p className="hero-sub">
-              CoreAI Fast и CoreAI Pro обсуждают вопрос вживую, у вас на глазах: соглашаются,
-              спорят, приводят контрдоводы друг другу. Вы видите не готовый ответ, а столкновение
-              двух позиций — и делаете вывод сами. Впишите свою тему справа, и ядра переключатся
-              на неё; не впишете — они всё равно что-то обсуждают.
+              Не один ассистент с готовым ответом, а два независимых ядра, которые спорят о вашем
+              вопросе вживую. Вы читаете столкновение позиций и делаете вывод сами.
             </p>
+          </div>
+
+          <div className="steps">
+            <h3 className="steps-title">Как это устроено</h3>
+            <div className="steps-grid">
+              <div className="step">
+                <span className="step-dot">1</span>
+                <div>
+                  <strong>Два разных движка</strong>
+                  <p>
+                    Внутри работают две разные модели: CoreAI Fast и CoreAI Pro. Разные архитектуры,
+                    разные обучающие данные — поэтому на один и тот же вопрос они приходят к разным
+                    выводам. Это не одна модель, играющая две роли: это два независимых движка,
+                    которые действительно расходятся во мнениях.
+                  </p>
+                </div>
+              </div>
+              <div className="step">
+                <span className="step-dot">2</span>
+                <div>
+                  <strong>Они отвечают друг другу, а не вам</strong>
+                  <p>
+                    Каждый ход ядро получает последнюю реплику оппонента и отвечает именно на неё:
+                    соглашается, уточняет цифру, ловит натяжку в рассуждении. Каждому задано отстаивать
+                    свою позицию и искать слабое место в чужой — поэтому диалог не скатывается во
+                    взаимные кивки.
+                  </p>
+                </div>
+              </div>
+              <div className="step">
+                <span className="step-dot">3</span>
+                <div>
+                  <strong>Тему задаёте вы</strong>
+                  <p>
+                    Впишите вопрос — ядра переключатся на него со следующей реплики. Ничего не
+                    впишете — они всё равно продолжат обсуждать: на витрине всегда идёт живой спор,
+                    его видно до всякой подписки.
+                  </p>
+                </div>
+              </div>
+              <div className="step">
+                <span className="step-dot">4</span>
+                <div>
+                  <strong>Спор не обрывается</strong>
+                  <p>
+                    У бесплатных лимитов ИИ-провайдеров есть потолок. Если одно ядро упёрлось в
+                    лимит, сервер молча подставляет второе — диалог продолжается, вы этого не
+                    замечаете.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Зачем спор, если можно спросить один раз</h3>
+            <p>
+              Один ИИ всегда звучит уверенно — в том числе когда ошибается. Вы получаете гладкий
+              абзац и не видите, где вывод натянут, а где держится на допущении.
+            </p>
+            <p>
+              Когда спорят двое, слабое место всплывает само: ровно там, где второе ядро цепляется
+              за формулировку. Вам не нужно быть экспертом, чтобы это заметить — достаточно
+              прочитать, в чём именно они не сошлись.
+            </p>
+          </div>
+
+          <div className="feature-grid">
+            <div className="feature-tile">
+              <span className="feature-num">01</span>
+              <h4>Решения с компромиссом</h4>
+              <p>
+                Снимать или брать ипотеку. Депозит или индексный фонд. Нанять в штат или отдать на
+                аутсорс. Там, где нет одного правильного ответа, полезнее увидеть обе стороны, чем
+                получить чужой вывод.
+              </p>
+            </div>
+            <div className="feature-tile">
+              <span className="feature-num">02</span>
+              <h4>Проверка утверждения</h4>
+              <p>Услышали тезис и не уверены. Поставьте его на обсуждение — второе ядро вытащит контраргументы, которых вы бы не нашли.</p>
+            </div>
+            <div className="feature-tile">
+              <span className="feature-num">03</span>
+              <h4>Подготовка к разговору</h4>
+              <p>Перед переговорами, собеседованием или защитой идеи полезно заранее услышать, что вам возразят.</p>
+            </div>
+            <div className="feature-tile">
+              <span className="feature-num">04</span>
+              <h4>Разобраться в теме</h4>
+              <p>Когда нужен не ответ, а понимание — спор объясняет предмет лучше, чем справка, потому что показывает, что в нём спорно.</p>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Чем отличается от обычного чата</h3>
+            <div className="feature-grid">
+              <div className="feature-tile">
+                <h4>Обычный чат с ИИ</h4>
+                <p>Вопрос → один уверенный ответ → верить или нет, решаете вслепую.</p>
+              </div>
+              <div className="feature-tile">
+                <h4>CoreAI Pool</h4>
+                <p>Вопрос → два разбора, которые сталкиваются → видно, что спорно, и вывод делаете вы.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Честно об ограничениях</h3>
+            <p>Оба ядра могут ошибаться в одну сторону. Спор снижает риск, но не отменяет проверку фактов.</p>
+            <p>Это не финансовая, юридическая и не медицинская консультация — это два взгляда на вопрос, а не рекомендация.</p>
+            <p>Итог не выносится. Ядра не голосуют и не объявляют победителя: вывод остаётся за вами. В этом смысл.</p>
           </div>
           </div>
         </div>
@@ -543,7 +616,11 @@ function App() {
 
           <div className="section-heading" style={{ marginTop: 48 }}>
             <h2>Тарифы</h2>
-            <p>Все тарифы — на 30 дней, разница только в дневном лимите запросов к ИИ.</p>
+            <p>
+              Цена посчитана от реальной стоимости запросов к ИИ-провайдерам плюс содержание
+              сервера. Разница между тарифами — только дневной лимит реплик, доступ к обоим ядрам
+              одинаковый на всех тарифах.
+            </p>
           </div>
 
           {!pendingPayment ? (
