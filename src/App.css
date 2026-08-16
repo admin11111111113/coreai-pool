@@ -1022,16 +1022,6 @@ body::after {
   color: var(--text-mute);
 }
 
-.platform-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 14.5px;
-  color: var(--text-dim);
-}
-
-.platform-stats strong { color: var(--text); font-weight: 650; }
-
 /* ═══════════ КНОПКИ ═══════════ */
 
 .btn {
@@ -1161,6 +1151,59 @@ body::after {
 }
 
 .pricing-card .btn-large { margin: 0; }
+
+.pricing-slider-card {
+  max-width: 380px;
+  margin: 0 auto 64px;
+  text-align: center;
+}
+
+.pricing-slider-card .tier-name { text-align: center; }
+.pricing-slider-card .tier-price { text-align: center; }
+
+.pricing-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  margin: 22px 0 10px;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  cursor: pointer;
+}
+
+.pricing-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--cyan);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.pricing-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--cyan);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.pricing-slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-bottom: 4px;
+}
+
+.pricing-slider-card .tier-requests { text-align: center; }
+.pricing-slider-card .btn-large { width: 100%; margin-top: 6px; }
 
 /* ═══════════ АДРЕС / КОПИРОВАНИЕ ═══════════ */
 

@@ -102,12 +102,12 @@ function App() {
   }, [loadHistory]);
 
   const [userData, setUserData] = useState(null);
-  const [poolStats, setPoolStats] = useState(null);
 
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [pendingPayment, setPendingPayment] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [tierIndex, setTierIndex] = useState(1);
 
   const [activeTab, setActiveTab] = useState("chat");
   const [error, setError] = useState("");
@@ -237,9 +237,6 @@ function App() {
         setUserData(data);
         setPendingPayment(data.pendingReservation || null);
       }
-
-      const statsRes = await fetch(`${API_URL}/api/stats`);
-      if (statsRes.ok) setPoolStats(await statsRes.json());
     } catch (err) {
       console.error("Load error:", err);
     }
@@ -659,49 +656,38 @@ function App() {
             </div>
           )}
 
-          {poolStats && (
-            <div className="card">
-              <h3>Статистика платформы</h3>
-              <div className="platform-stats">
-                <div>
-                  Пользователей: <strong>{poolStats.totalUsers}</strong>
-                </div>
-                <div>
-                  Активных подписок: <strong>{poolStats.totalActive}</strong>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="section-heading" style={{ marginTop: 48 }}>
             <h2>Тарифы</h2>
-            <p>
-              Цена посчитана от реальной стоимости запросов к ИИ-провайдерам плюс содержание
-              сервера. Разница между тарифами — только дневной лимит реплик, доступ к обоим ядрам
-              одинаковый на всех тарифах.
-            </p>
           </div>
 
           {!pendingPayment ? (
-            <div className="pricing-grid">
-              {SUBSCRIPTION_TIERS.map((tier, i) => (
-                <div className={`pricing-card ${i === 1 ? "popular" : ""}`} key={tier.label}>
-                  {i === 1 && <div className="pricing-badge">Популярный</div>}
-                  <div className="tier-name">{tier.label}</div>
-                  <div className="tier-price">
-                    {tier.amount} {TOKEN_SYMBOL}
-                    <span className="tier-period">/30 дней</span>
-                  </div>
-                  <div className="tier-requests">{tier.requests}</div>
-                  <button
-                    className="btn btn-primary btn-large"
-                    onClick={() => handleSubscribe(i)}
-                    disabled={isSubscribing}
-                  >
-                    {isSubscribing ? "..." : "Выбрать"}
-                  </button>
-                </div>
-              ))}
+            <div className="pricing-slider-card card">
+              <div className="tier-name">{SUBSCRIPTION_TIERS[tierIndex].label}</div>
+              <div className="tier-price">
+                {SUBSCRIPTION_TIERS[tierIndex].amount} {TOKEN_SYMBOL}
+                <span className="tier-period">/30 дней</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={SUBSCRIPTION_TIERS.length - 1}
+                step={1}
+                value={tierIndex}
+                onChange={(e) => setTierIndex(Number(e.target.value))}
+                className="pricing-slider"
+              />
+              <div className="pricing-slider-scale">
+                <span>{SUBSCRIPTION_TIERS[0].amount} {TOKEN_SYMBOL}</span>
+                <span>{SUBSCRIPTION_TIERS[SUBSCRIPTION_TIERS.length - 1].amount} {TOKEN_SYMBOL}</span>
+              </div>
+              <div className="tier-requests">{SUBSCRIPTION_TIERS[tierIndex].requests}</div>
+              <button
+                className="btn btn-primary btn-large"
+                onClick={() => handleSubscribe(tierIndex)}
+                disabled={isSubscribing}
+              >
+                {isSubscribing ? "..." : "Оформить"}
+              </button>
             </div>
           ) : (
             <div className="card">
