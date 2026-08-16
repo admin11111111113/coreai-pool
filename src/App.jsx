@@ -132,8 +132,11 @@ function App() {
     let direction = 1;
     let lastTs = null;
     let rafId = null;
+    let seeking = false; // ждём завершения предыдущего seek, иначе декодер захлёбывается и виснет
 
     function step(ts) {
+      rafId = requestAnimationFrame(step);
+      if (seeking) return;
       if (lastTs === null) lastTs = ts;
       const dt = (ts - lastTs) / 1000;
       lastTs = ts;
@@ -146,9 +149,14 @@ function App() {
           next = 0;
           direction = 1;
         }
+        seeking = true;
         video.currentTime = next;
       }
-      rafId = requestAnimationFrame(step);
+    }
+
+    function onSeeked() {
+      seeking = false;
+      lastTs = null; // не копим большой dt пока ждали seek
     }
 
     function start() {
@@ -156,11 +164,13 @@ function App() {
       if (rafId === null) rafId = requestAnimationFrame(step);
     }
 
+    video.addEventListener("seeked", onSeeked);
     if (video.readyState >= 1) start();
     else video.addEventListener("loadedmetadata", start, { once: true });
 
     return () => {
       video.removeEventListener("loadedmetadata", start);
+      video.removeEventListener("seeked", onSeeked);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
