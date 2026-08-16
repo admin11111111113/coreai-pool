@@ -139,45 +139,41 @@ body::after {
 
 .page {
   width: 100%;
-  max-width: 1220px;
+  max-width: 880px;
   margin: 0 auto;
   padding: 0 24px;
 }
 
-/* ═══════════ ГЛАВНАЯ: слева контент, справа закреплённый чат ═══════════ */
+/* ═══════════ ГЛАВНАЯ: диалог сверху по центру, материалы ниже ═══════════ */
 
-.home-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.home-left,
-.home-right {
+.home-left {
   width: 100%;
   min-width: 0;
 }
 
-@media (min-width: 960px) {
-  .home-layout {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 32px;
-  }
+.tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 22px;
+}
 
-  .home-left {
-    flex: 1;
-    order: 1;
-  }
+.tech-badge {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line-hi);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
 
-  .home-right {
-    width: 480px;
-    flex-shrink: 0;
-    order: 2;
-    position: sticky;
-    /* ниже sticky header (61px) + высоты полосы вкладок */
-    top: 145px;
-  }
+.debate-hub {
+  width: 100%;
+  max-width: 720px;
+  margin: 32px auto 56px;
 }
 
 .bar-inner {
@@ -461,6 +457,7 @@ body::after {
 
 .mood-picker {
   display: flex;
+  justify-content: center;
   gap: 8px;
   margin-bottom: 14px;
   flex-wrap: wrap;

@@ -365,8 +365,28 @@ function App() {
       {/* ЧАТ С ИИ — первый экран: сразу рабочая панель + материалы о продукте */}
       {activeTab === "chat" && (
         <div className="page">
-        <div className="home-layout">
-          <div className="home-right">
+        <div className="home-left">
+          <div className="hero hero-compact">
+            <div className="hero-eyebrow">
+              <span className="pill">2 ядра</span>
+              Не один ответ, а живой спор двух точек зрения
+            </div>
+            <p className="hero-tagline">
+              Спросите — и два ИИ разберут это между собой
+            </p>
+            <p className="hero-sub">
+              Не один ассистент с готовым ответом, а два независимых ядра, которые спорят о вашем
+              вопросе вживую. Вы читаете столкновение позиций и делаете вывод сами.
+            </p>
+            <div className="tech-badges">
+              <span className="tech-badge">⚡ Два независимых ИИ-движка</span>
+              <span className="tech-badge">🔁 Живой перекрёстный спор в реальном времени</span>
+              <span className="tech-badge">🛟 Автопереключение, если один ИИ перегружен</span>
+              <span className="tech-badge">🧠 Модели обновляются без вашего участия</span>
+            </div>
+          </div>
+
+          <div className="debate-hub">
           <div className="chat-panel">
             <form className="chat-input-form topic-form" onSubmit={handleSetTopic}>
               <input
@@ -452,21 +472,6 @@ function App() {
               </div>
             </div>
           </div>
-          </div>
-
-          <div className="home-left">
-          <div className="hero hero-compact">
-            <div className="hero-eyebrow">
-              <span className="pill">2 ядра</span>
-              Не один ответ, а живой спор двух точек зрения
-            </div>
-            <p className="hero-tagline">
-              Спросите — и два ИИ разберут это между собой
-            </p>
-            <p className="hero-sub">
-              Не один ассистент с готовым ответом, а два независимых ядра, которые спорят о вашем
-              вопросе вживую. Вы читаете столкновение позиций и делаете вывод сами.
-            </p>
           </div>
 
           <div className="steps">
@@ -613,7 +618,6 @@ function App() {
             </div>
           )}
           </div>
-        </div>
         </div>
       )}
 
