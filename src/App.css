@@ -139,6 +139,42 @@ body::after {
   padding: 0 24px;
 }
 
+/* ═══════════ ГЛАВНАЯ: слева контент, справа закреплённый чат ═══════════ */
+
+.home-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-left,
+.home-right {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 960px) {
+  .home-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 32px;
+  }
+
+  .home-left {
+    flex: 1;
+    order: 1;
+  }
+
+  .home-right {
+    width: 400px;
+    flex-shrink: 0;
+    order: 2;
+    position: sticky;
+    /* ниже sticky header (61px) + высоты полосы вкладок */
+    top: 145px;
+  }
+}
+
 .bar-inner {
   width: 100%;
   max-width: 1080px;

@@ -368,24 +368,8 @@ function App() {
       {/* ЧАТ С ИИ — первый экран: сразу рабочая панель + материалы о продукте */}
       {activeTab === "chat" && (
         <div className="page">
-          <div className="hero hero-compact">
-            <div className="hero-eyebrow">
-              <span className="pill">2 ядра</span>
-              CoreAI Fast + CoreAI Pro в одном окне
-            </div>
-            <p className="hero-tagline">
-              Два ИИ-ядра в одном чате — с <em>автопереключением</em> при лимите
-            </p>
-            <p className="hero-sub">
-              Упёрлись в лимит одного ядра — сервер молча подставит второе. Вы просто продолжаете
-              разговор и получаете ответ.
-            </p>
-
-            <div className="hero-visual">
-              <CoreVisual />
-            </div>
-          </div>
-
+        <div className="home-layout">
+          <div className="home-right">
           <div className="chat-panel">
             <div className="ai-switcher">
               <button className={`ai-btn ${selectedAI === "gemini" ? "active" : ""}`} onClick={() => setSelectedAI("gemini")}>
@@ -442,6 +426,26 @@ function App() {
                 {userData?.dailyRemaining ?? "—"} запросов
               </div>
             )}
+          </div>
+          </div>
+
+          <div className="home-left">
+          <div className="hero hero-compact">
+            <div className="hero-eyebrow">
+              <span className="pill">2 ядра</span>
+              CoreAI Fast + CoreAI Pro в одном окне
+            </div>
+            <p className="hero-tagline">
+              Два ИИ-ядра в одном чате — с <em>автопереключением</em> при лимите
+            </p>
+            <p className="hero-sub">
+              Упёрлись в лимит одного ядра — сервер молча подставит второе. Вы просто продолжаете
+              разговор и получаете ответ.
+            </p>
+
+            <div className="hero-visual">
+              <CoreVisual />
+            </div>
           </div>
 
           <div className="showcase">
@@ -503,6 +507,8 @@ function App() {
               </div>
             </div>
           </div>
+          </div>
+        </div>
         </div>
       )}
 
