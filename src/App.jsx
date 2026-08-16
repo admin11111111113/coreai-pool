@@ -12,8 +12,8 @@ import { API_URL, TOKEN_SYMBOL, NETWORK_LABEL, SUBSCRIPTION_TIERS } from "./conf
 import "./App.css";
 
 const FAQ_ITEMS = [
-  { q: "Какие ИИ доступны?", a: "Два ядра — CoreAI Fast и CoreAI Pro. Переключаетесь между ними в чате одной кнопкой." },
-  { q: "Что если у выбранного ядра кончится лимит?", a: "Сервер сам пробует запасное ядро — вы просто получаете ответ, без ошибок." },
+  { q: "Как работает обсуждение?", a: "Два ядра — CoreAI Fast и CoreAI Pro — обсуждают заданную тему между собой, вживую, прямо на главной странице." },
+  { q: "Что если у одного ядра кончится лимит?", a: "Сервер сам пробует запасное ядро — обсуждение продолжается без сбоев." },
   { q: "Нужен ли MetaMask?", a: "Нет. Просто переведите USDT с любого кошелька (Trust Wallet, биржа и т.п.) на показанный адрес." },
   { q: "Как быстро активируется подписка?", a: "Обычно в течение 30–60 секунд после перевода — сервер проверяет блокчейн каждые полминуты." },
   { q: "Что будет, если отправить не ту сумму?", a: "Сумма сверяется с допуском ±1 USDT. Если сильно отличается — платёж не будет засчитан, напишите в поддержку." },
@@ -208,12 +208,6 @@ function App() {
   const [openFaq, setOpenFaq] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  const [messages, setMessages] = useState([]);
-  const [chatInput, setChatInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [selectedAI, setSelectedAI] = useState("gemini");
-  const chatEndRef = useRef(null);
-
   const [activeTab, setActiveTab] = useState("chat");
   const [error, setError] = useState("");
 
@@ -244,25 +238,30 @@ function App() {
   }, [loadDebate]);
 
   useEffect(() => {
-    if (activeTab === "live") debateEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [debateMessages, activeTab]);
+    if (debateMessages.length > 0) debateEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [debateMessages]);
 
   async function handleSetTopic(e) {
     e.preventDefault();
-    if (!topicInput.trim() || isSettingTopic) return;
+    if (!topicInput.trim() || isSettingTopic || !userData?.isActive) return;
     setIsSettingTopic(true);
+    setError("");
     try {
       const res = await fetch(`${API_URL}/api/debate/topic`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: topicInput.trim() }),
+        body: JSON.stringify({ sessionId, topic: topicInput.trim() }),
       });
+      const data = await res.json();
       if (res.ok) {
         setTopicInput("");
         await loadDebate();
+        await loadUserData();
+      } else {
+        setError(data.message || data.error || "Не удалось задать тему");
       }
     } catch (err) {
-      console.error("Set topic error:", err);
+      setError("Ошибка: " + err.message);
     } finally {
       setIsSettingTopic(false);
     }
@@ -323,51 +322,6 @@ function App() {
     setTimeout(() => setCopied(false), 1800);
   }
 
-  // ==================== ЧАТ С ИИ ====================
-
-  async function handleSendMessage(e) {
-    e.preventDefault();
-    if (!chatInput.trim() || isSending) return;
-
-    const userMessage = chatInput.trim();
-    setChatInput("");
-    setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
-    setIsSending(true);
-
-    try {
-      const res = await fetch(`${API_URL}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, message: userMessage, model: selectedAI }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setMessages((prev) => [...prev, { role: "error", text: data.message || data.error }]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "ai", text: data.response, model: data.model, fallback: data.fallback, usage: data.usage },
-        ]);
-        if (userData) {
-          setUserData((prev) => ({ ...prev, dailyUsed: data.usage.used, dailyRemaining: data.usage.remaining }));
-        }
-      }
-    } catch (err) {
-      setMessages((prev) => [...prev, { role: "error", text: "Ошибка соединения с сервером" }]);
-    } finally {
-      setIsSending(false);
-    }
-  }
-
-  useEffect(() => {
-    // Прокручиваем только ленту чата и только когда есть сообщения,
-    // иначе страница «прыгает» вниз при первой загрузке.
-    if (messages.length === 0) return;
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [messages]);
-
   // ======================== HELPERS ========================
 
   function formatDate(ts) {
@@ -408,10 +362,6 @@ function App() {
         <div className="bar-inner tabs-inner">
           <button className={`tab ${activeTab === "chat" ? "active" : ""}`} onClick={() => setActiveTab("chat")}>
             Чат
-            {userData?.dailyRemaining !== undefined && <span className="tab-badge">{userData.dailyRemaining}</span>}
-          </button>
-          <button className={`tab ${activeTab === "live" ? "active" : ""}`} onClick={() => setActiveTab("live")}>
-            Эфир
           </button>
           <button className={`tab ${activeTab === "profile" ? "active" : ""}`} onClick={() => setActiveTab("profile")}>
             Кабинет
@@ -427,69 +377,73 @@ function App() {
         <div className="home-layout">
           <div className="home-right">
           <div className="chat-panel">
-            <div className="chat-avatars">
-              <button
-                className={`chat-avatar-btn ${selectedAI === "gemini" ? "active" : ""}`}
-                onClick={() => setSelectedAI("gemini")}
-              >
-                <CoreCharacter side="left" small speaking={selectedAI === "gemini"} colorA="#a5f3fc" colorB="#0e7490" />
-                <span>CoreAI Fast</span>
-              </button>
-              <button
-                className={`chat-avatar-btn ${selectedAI === "groq" ? "active" : ""}`}
-                onClick={() => setSelectedAI("groq")}
-              >
-                <CoreCharacter side="right" small speaking={selectedAI === "groq"} colorA="#e9d5ff" colorB="#5b21b6" />
-                <span>CoreAI Pro</span>
-              </button>
-            </div>
-
-            <div className="chat-messages">
-              {messages.length === 0 && (
-                <div className="chat-empty">
-                  <div className="chat-empty-icon">✦</div>
-                  <p>Задайте вопрос ИИ-ассистенту CoreAI</p>
-                </div>
-              )}
-              {messages.map((msg, i) => (
-                <div key={i} className={`chat-msg ${msg.role}`}>
-                  <div className="msg-bubble">
-                    {msg.text}
-                    {msg.model && (
-                      <div className="msg-model">
-                        {msg.model}
-                        {msg.fallback && " (авто-переключение)"}
-                      </div>
-                    )}
-                    {msg.usage && <div className="msg-usage">Запросов: {msg.usage.used}/{msg.usage.limit}</div>}
-                  </div>
-                </div>
-              ))}
-              <div ref={chatEndRef} />
-            </div>
-
-            <form className="chat-input-form" onSubmit={handleSendMessage}>
+            <form className="chat-input-form topic-form" onSubmit={handleSetTopic}>
               <input
                 type="text"
                 className="chat-input"
-                placeholder="Напишите сообщение..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                disabled={isSending || !userData?.isActive}
+                placeholder="Впишите тему для обсуждения..."
+                value={topicInput}
+                onChange={(e) => setTopicInput(e.target.value)}
+                disabled={isSettingTopic || !userData?.isActive}
+                maxLength={200}
               />
-              <button type="submit" className="btn btn-primary" disabled={isSending || !chatInput.trim() || !userData?.isActive}>
-                {isSending ? "..." : "→"}
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSettingTopic || !topicInput.trim() || !userData?.isActive}
+              >
+                {isSettingTopic ? "..." : "Обсудить"}
               </button>
             </form>
 
-            {!userData?.isActive && <div className="chat-blocked">Оформите подписку для доступа к ИИ — вкладка «Кабинет»</div>}
-
-            {userData?.isActive && (
-              <div className="chat-info">
-                Ядро: {selectedAI === "gemini" ? "CoreAI Fast" : "CoreAI Pro"} | Осталось:{" "}
-                {userData?.dailyRemaining ?? "—"} запросов
-              </div>
+            {!userData?.isActive && (
+              <div className="chat-blocked">Оформите подписку, чтобы задавать свою тему — вкладка «Кабинет»</div>
             )}
+
+            <div className="debate-topic-current">
+              Сейчас обсуждают: <strong>{debateTopic || "…"}</strong>
+              {userData?.isActive && <div style={{ marginTop: 4 }}>Осталось запросов сегодня: {userData?.dailyRemaining ?? "—"}</div>}
+            </div>
+
+            <div className="debate-arena">
+              <CoreCharacter
+                side="left"
+                speaking={debateMessages[debateMessages.length - 1]?.speaker === "fast"}
+                colorA="#a5f3fc"
+                colorB="#0e7490"
+              />
+
+              <div className="debate-panel">
+                <div className="debate-messages">
+                  {debateMessages.length === 0 && (
+                    <div className="chat-empty">
+                      <div className="chat-empty-icon">✦</div>
+                      <p>Ядра готовятся начать...</p>
+                    </div>
+                  )}
+                  {debateMessages.map((m, i) =>
+                    m.speaker === "system" ? (
+                      <div className="debate-system" key={i}>
+                        {m.text}
+                      </div>
+                    ) : (
+                      <div key={i} className={`debate-msg ${m.speaker}`}>
+                        <div className="debate-msg-name">{m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}</div>
+                        <div className="debate-msg-bubble">{m.text}</div>
+                      </div>
+                    )
+                  )}
+                  <div ref={debateEndRef} />
+                </div>
+              </div>
+
+              <CoreCharacter
+                side="right"
+                speaking={debateMessages[debateMessages.length - 1]?.speaker === "pro"}
+                colorA="#e9d5ff"
+                colorB="#5b21b6"
+              />
+            </div>
           </div>
           </div>
 
@@ -497,18 +451,16 @@ function App() {
           <div className="hero hero-compact">
             <div className="hero-eyebrow">
               <span className="pill">2 ядра</span>
-              Точность через сверку, а не через одну догадку
+              Не один ответ, а живой спор двух точек зрения
             </div>
             <p className="hero-tagline">
-              Мы запустили два ИИ-ядра ради <em>более точного</em> ответа
+              Спросите — и два ИИ разберут это между собой
             </p>
             <p className="hero-sub">
-              Один и тот же вопрос одновременно разбирают два независимых ИИ-контура — похоже на
-              точное производство, где узел сверяют дважды, прежде чем выпустить готовую деталь.
-              Мы продолжаем наращивать эту схему дальше: новые ядра, более тонкая сверка результата,
-              быстрее итоговый ответ. А если хотите увидеть, как ядра спорят и уточняют друг друга
-              вживую, а не просто отвечают вам — загляните во вкладку «Эфир»: там они прямо сейчас
-              решают заданный вопрос между собой.
+              CoreAI Fast и CoreAI Pro обсуждают вопрос вживую, у вас на глазах: соглашаются,
+              спорят, приводят контрдоводы друг другу. Вы видите не готовый ответ, а столкновение
+              двух позиций — и делаете вывод сами. Впишите свою тему справа, и ядра переключатся
+              на неё; не впишете — они всё равно что-то обсуждают.
             </p>
 
             <div className="hero-visual">
@@ -516,21 +468,11 @@ function App() {
             </div>
           </div>
 
-          <div className="showcase">
-            <h3 className="steps-title">Пример: как ядра уточняют друг друга</h3>
-            <div className="showcase-frame">
-              <div className="showcase-msg user">Стоит вкладываться в акции сейчас?</div>
-              <div className="showcase-msg ai">CoreAI Fast: риск выше среднего по текущим мультипликаторам, но длинный горизонт его сглаживает.</div>
-              <div className="showcase-msg ai">CoreAI Pro: не соглашусь — сглаживает только при регулярных довложениях, разовый вход всё равно тайминг-риск.</div>
-              <div className="showcase-msg user">Так это хорошая идея или нет?</div>
-            </div>
-          </div>
-
           <div className="feature-grid">
             <div className="feature-tile">
               <span className="feature-num">01</span>
               <h4>Два ядра ИИ</h4>
-              <p>CoreAI Fast и CoreAI Pro в одном окне — переключайтесь одной кнопкой.</p>
+              <p>CoreAI Fast и CoreAI Pro обсуждают вашу тему вместе, а не по очереди.</p>
             </div>
             <div className="feature-tile">
               <span className="feature-num">02</span>
@@ -577,75 +519,6 @@ function App() {
           </div>
           </div>
         </div>
-        </div>
-      )}
-
-      {/* ЭФИР — CoreAI Fast и CoreAI Pro спорят между собой */}
-      {activeTab === "live" && (
-        <div className="page">
-          <div className="hero hero-compact">
-            <p className="hero-tagline">Эфир: два ядра спорят вживую</p>
-            <p className="hero-sub">Впишите тему — ядра обсудят именно её. Не впишете — спор идёт сам по себе.</p>
-          </div>
-
-          <form className="chat-input-form topic-form" onSubmit={handleSetTopic}>
-            <input
-              type="text"
-              className="chat-input"
-              placeholder="Тема для обсуждения..."
-              value={topicInput}
-              onChange={(e) => setTopicInput(e.target.value)}
-              disabled={isSettingTopic}
-              maxLength={200}
-            />
-            <button type="submit" className="btn btn-primary" disabled={isSettingTopic || !topicInput.trim()}>
-              {isSettingTopic ? "..." : "Обсудить"}
-            </button>
-          </form>
-
-          <div className="debate-topic-current">
-            Сейчас обсуждают: <strong>{debateTopic || "…"}</strong>
-          </div>
-
-          <div className="debate-arena">
-            <CoreCharacter
-              side="left"
-              speaking={debateMessages[debateMessages.length - 1]?.speaker === "fast"}
-              colorA="#a5f3fc"
-              colorB="#0e7490"
-            />
-
-            <div className="debate-panel">
-              <div className="debate-messages">
-                {debateMessages.length === 0 && (
-                  <div className="chat-empty">
-                    <div className="chat-empty-icon">✦</div>
-                    <p>Ядра готовятся начать...</p>
-                  </div>
-                )}
-                {debateMessages.map((m, i) =>
-                  m.speaker === "system" ? (
-                    <div className="debate-system" key={i}>
-                      {m.text}
-                    </div>
-                  ) : (
-                    <div key={i} className={`debate-msg ${m.speaker}`}>
-                      <div className="debate-msg-name">{m.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}</div>
-                      <div className="debate-msg-bubble">{m.text}</div>
-                    </div>
-                  )
-                )}
-                <div ref={debateEndRef} />
-              </div>
-            </div>
-
-            <CoreCharacter
-              side="right"
-              speaking={debateMessages[debateMessages.length - 1]?.speaker === "pro"}
-              colorA="#e9d5ff"
-              colorB="#5b21b6"
-            />
-          </div>
         </div>
       )}
 
