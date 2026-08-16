@@ -255,6 +255,9 @@ function App() {
 
   return (
     <div className="app">
+      <video className="bg-video" autoPlay muted loop playsInline src={`${import.meta.env.BASE_URL}bg.mp4`} />
+      <div className="bg-video-overlay" aria-hidden="true"></div>
+
       {/* HEADER */}
       <header className="header">
         <div className="bar-inner">
