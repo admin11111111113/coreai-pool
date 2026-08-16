@@ -121,7 +121,8 @@ function App() {
   const [debateRepliesLeft, setDebateRepliesLeft] = useState(0);
   const [debateQueueLength, setDebateQueueLength] = useState(0);
   const [debateArchive, setDebateArchive] = useState([]);
-  const [docPreview, setDocPreview] = useState(null);
+  const archiveSectionRef = useRef(null);
+  const [highlightedRoundId, setHighlightedRoundId] = useState(null);
   const [topicInput, setTopicInput] = useState("");
   const [topicMood, setTopicMood] = useState("tough");
   const [topicNotice, setTopicNotice] = useState("");
@@ -328,20 +329,16 @@ function App() {
     setTimeout(() => setCopied(false), 1800);
   }
 
+  function openArchiveRound(finishedAt) {
+    document.getElementById(`archive-round-${finishedAt}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedRoundId(finishedAt);
+    setTimeout(() => setHighlightedRoundId(null), 2500);
+  }
+
   function documentPdfUrl(round, speaker, download) {
     const params = new URLSearchParams({ finishedAt: String(round.finishedAt), speaker });
     if (download) params.set("download", "1");
     return `${API_URL}/api/debate/document.pdf?${params.toString()}`;
-  }
-
-  function handleOpenDocument(round, speaker) {
-    setDocPreview({ round, speaker });
-  }
-
-  function downloadPreviewedDocument() {
-    if (!docPreview) return;
-    const name = docPreview.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro";
-    downloadRtf(`${name} — ${docPreview.round.topic.slice(0, 60)}.rtf`, `${name}: ${docPreview.round.topic}`, docPreview.text);
   }
 
   // ======================== HELPERS ========================
@@ -432,7 +429,39 @@ function App() {
               <button type="submit" className="btn btn-primary" disabled={isSettingTopic || !topicInput.trim()}>
                 {isSettingTopic ? "..." : "Обсудить"}
               </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => archiveSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              >
+                📁 Архив
+              </button>
             </form>
+
+            {topicInput.trim().length >= 2 &&
+              (() => {
+                const q = topicInput.trim().toLowerCase();
+                const matches = debateArchive.filter((r) => r.topic.toLowerCase().includes(q)).slice(0, 5);
+                if (matches.length === 0) return null;
+                return (
+                  <div className="topic-suggest">
+                    <div className="topic-suggest-label">
+                      Похожая тема уже обсуждалась — откройте готовый ответ ниже, или впишите свой вопрос точнее и
+                      нажмите «Обсудить», чтобы создать новую:
+                    </div>
+                    {matches.map((r) => (
+                      <button
+                        key={r.finishedAt}
+                        type="button"
+                        className="topic-suggest-item"
+                        onClick={() => openArchiveRound(r.finishedAt)}
+                      >
+                        {r.topic} →
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
 
             <div className="mood-picker">
               {[
@@ -612,15 +641,19 @@ function App() {
           </div>
 
           {debateArchive.length > 0 && (
-            <div className="steps">
+            <div className="steps" ref={archiveSectionRef}>
               <h3 className="steps-title">Архив тем — к чему уже пришли</h3>
               <p style={{ fontSize: 12.5, color: "var(--text-mute)", textAlign: "center", marginTop: -14, marginBottom: 22 }}>
                 Документ — это развёрнутая позиция ядра по своим данным, без живой проверки в интернете. Источники и
                 цифры в нём — не готовое юридическое заключение, а материал для вашей собственной проверки.
               </p>
               <div className="steps-grid">
-                {debateArchive.slice(0, 8).map((round, i) => (
-                  <div className="step" key={round.finishedAt || i}>
+                {debateArchive.map((round, i) => (
+                  <div
+                    className={`step ${highlightedRoundId === round.finishedAt ? "step-highlight" : ""}`}
+                    id={`archive-round-${round.finishedAt}`}
+                    key={round.finishedAt || i}
+                  >
                     <div>
                       <strong>{round.topic}</strong>
                       {round.messages
@@ -641,14 +674,15 @@ function App() {
                         ))}
                       <div className="doc-buttons">
                         {["fast", "pro"].map((speaker) => (
-                          <button
+                          <a
                             key={speaker}
-                            type="button"
                             className="doc-btn"
-                            onClick={() => handleOpenDocument(round, speaker)}
+                            href={documentPdfUrl(round, speaker, false)}
+                            target="_blank"
+                            rel="noreferrer"
                           >
                             {`📄 Документ ${speaker === "fast" ? "Fast" : "Pro"}`}
-                          </button>
+                          </a>
                         ))}
                       </div>
                     </div>
@@ -890,50 +924,6 @@ function App() {
       <footer className="footer">
         <div className="page footer-inner">© CoreAI Pool · Оплата USDT (BEP-20, BSC) · Тарифы рассчитаны от стоимости API</div>
       </footer>
-
-      {docPreview && (
-        <div className="doc-modal-overlay" onClick={() => setDocPreview(null)}>
-          <div className="doc-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="doc-modal-header">
-              <h3>
-                {docPreview.speaker === "fast" ? "CoreAI Fast" : "CoreAI Pro"}: {docPreview.round.topic}
-              </h3>
-              <button type="button" className="doc-modal-close" onClick={() => setDocPreview(null)}>
-                ✕
-              </button>
-            </div>
-            <iframe
-              className="doc-modal-frame"
-              src={documentPdfUrl(docPreview.round, docPreview.speaker, false)}
-              title="Документ"
-            />
-            <p className="doc-modal-disclaimer">
-              Если PDF не показался (иногда бывает на мобильных) — откройте в новой вкладке. Позиция ИИ по своим
-              данным, без живой проверки в интернете — источники и цифры проверяйте сами.
-            </p>
-            <div className="doc-modal-footer">
-              <a
-                className="btn btn-primary"
-                href={documentPdfUrl(docPreview.round, docPreview.speaker, true)}
-                download
-              >
-                Скачать PDF
-              </a>
-              <a
-                className="btn btn-ghost"
-                href={documentPdfUrl(docPreview.round, docPreview.speaker, false)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Открыть в новой вкладке
-              </a>
-              <button type="button" className="btn btn-ghost" onClick={() => setDocPreview(null)}>
-                Закрыть
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
