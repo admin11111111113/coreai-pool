@@ -39,10 +39,14 @@ function App() {
   const [sessionId, setSessionId] = useState(getOrCreateSessionId);
 
   // ==================== АККАУНТ (email+пароль — для восстановления sessionId) ====================
+  // authMode: "login" | "register" | "forgot" (запрос кода) | "reset" (код + новый пароль)
   const [authEmail, setAuthEmail] = useState(() => localStorage.getItem("coreai_account_email") || "");
   const [authMode, setAuthMode] = useState("login");
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
+  const [resetCodeInput, setResetCodeInput] = useState("");
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
   const [isAuthing, setIsAuthing] = useState(false);
   const [paymentHistory, setPaymentHistory] = useState([]);
 
@@ -76,6 +80,64 @@ function App() {
         setAuthEmail(data.email);
         setEmailInput("");
         setPasswordInput("");
+      }
+    } catch (err) {
+      setError("Ошибка: " + err.message);
+    } finally {
+      setIsAuthing(false);
+    }
+  }
+
+  async function handleForgotPassword(e) {
+    e.preventDefault();
+    if (!emailInput.trim() || isAuthing) return;
+    setIsAuthing(true);
+    setError("");
+    setAuthNotice("");
+    try {
+      const res = await fetch(`${API_URL}/api/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || data.error || "Ошибка");
+      } else {
+        setAuthMode("reset");
+        setAuthNotice(data.message || "Если такой email зарегистрирован, код отправлен на почту.");
+      }
+    } catch (err) {
+      setError("Ошибка: " + err.message);
+    } finally {
+      setIsAuthing(false);
+    }
+  }
+
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    if (!emailInput.trim() || !resetCodeInput.trim() || !newPasswordInput || isAuthing) return;
+    setIsAuthing(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_URL}/api/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput.trim(), code: resetCodeInput.trim(), newPassword: newPasswordInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || data.error || "Ошибка");
+      } else {
+        persistSessionId(data.sessionId);
+        localStorage.setItem("coreai_account_email", data.email);
+        setAuthEmail(data.email);
+        setEmailInput("");
+        setPasswordInput("");
+        setResetCodeInput("");
+        setNewPasswordInput("");
+        setAuthNotice("");
+        setAuthMode("login");
       }
     } catch (err) {
       setError("Ошибка: " + err.message);
@@ -697,6 +759,84 @@ function App() {
                   Выйти
                 </button>
               </div>
+            ) : authMode === "forgot" ? (
+              <>
+                <p style={{ fontSize: 13 }}>Впишите email — пришлём код для сброса пароля.</p>
+                <form className="chat-input-form topic-form" onSubmit={handleForgotPassword} style={{ flexWrap: "wrap" }}>
+                  <input
+                    type="email"
+                    className="chat-input"
+                    placeholder="Email"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    disabled={isAuthing}
+                  />
+                  <button type="submit" className="btn btn-primary" disabled={isAuthing || !emailInput.trim()}>
+                    {isAuthing ? "..." : "Отправить код"}
+                  </button>
+                </form>
+                <p style={{ fontSize: 12, marginTop: 10 }}>
+                  <a
+                    href="#"
+                    style={{ color: "var(--signal)" }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setAuthMode("login");
+                      setAuthNotice("");
+                      setError("");
+                    }}
+                  >
+                    ← Назад ко входу
+                  </a>
+                </p>
+              </>
+            ) : authMode === "reset" ? (
+              <>
+                <p style={{ fontSize: 13 }}>
+                  {authNotice || `Код отправлен на ${emailInput || "почту"} — впишите его и новый пароль.`}
+                </p>
+                <form className="chat-input-form topic-form" onSubmit={handleResetPassword} style={{ flexWrap: "wrap" }}>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="chat-input"
+                    placeholder="Код из письма (6 цифр)"
+                    value={resetCodeInput}
+                    onChange={(e) => setResetCodeInput(e.target.value.replace(/\D/g, ""))}
+                    disabled={isAuthing}
+                    maxLength={6}
+                  />
+                  <input
+                    type="password"
+                    className="chat-input"
+                    placeholder="Новый пароль (мин. 6 символов)"
+                    value={newPasswordInput}
+                    onChange={(e) => setNewPasswordInput(e.target.value)}
+                    disabled={isAuthing}
+                  />
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isAuthing || !resetCodeInput.trim() || !newPasswordInput}
+                  >
+                    {isAuthing ? "..." : "Сохранить пароль"}
+                  </button>
+                </form>
+                <p style={{ fontSize: 12, marginTop: 10 }}>
+                  <a
+                    href="#"
+                    style={{ color: "var(--signal)" }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setAuthMode("forgot");
+                      setAuthNotice("");
+                      setError("");
+                    }}
+                  >
+                    Не пришёл код? Отправить заново
+                  </a>
+                </p>
+              </>
             ) : (
               <>
                 <p style={{ fontSize: 13 }}>
@@ -732,10 +872,27 @@ function App() {
                     onClick={(e) => {
                       e.preventDefault();
                       setAuthMode(authMode === "register" ? "login" : "register");
+                      setError("");
                     }}
                   >
                     {authMode === "register" ? "Войти" : "Зарегистрироваться"}
                   </a>
+                  {authMode === "login" && (
+                    <>
+                      {" · "}
+                      <a
+                        href="#"
+                        style={{ color: "var(--signal)" }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setAuthMode("forgot");
+                          setError("");
+                        }}
+                      >
+                        Забыли пароль?
+                      </a>
+                    </>
+                  )}
                 </p>
               </>
             )}
