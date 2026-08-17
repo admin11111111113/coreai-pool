@@ -28,6 +28,15 @@ function getOrCreateSessionId() {
   return id;
 }
 
+// Приход по чужой реф-ссылке (?ref=<sessionId>) — запоминаем один раз,
+// дальше используется при /api/reserve, чем бы ни закончился визит сейчас.
+function captureReferrer(ownSessionId) {
+  const ref = new URLSearchParams(window.location.search).get("ref");
+  if (ref && ref !== ownSessionId && !localStorage.getItem("coreai_ref_id")) {
+    localStorage.setItem("coreai_ref_id", ref);
+  }
+}
+
 function shortTx(hash) {
   if (!hash) return "";
   return hash.slice(0, 8) + "..." + hash.slice(-6);
@@ -37,6 +46,36 @@ function shortTx(hash) {
 function App() {
   // ==================== СОСТОЯНИЕ ====================
   const [sessionId, setSessionId] = useState(getOrCreateSessionId);
+
+  // ==================== РЕФЕРАЛЬНАЯ ПРОГРАММА ====================
+  const [referralStats, setReferralStats] = useState({ referralPercent: 30, pendingBalance: 0, referredCount: 0 });
+  const [refLinkCopied, setRefLinkCopied] = useState(false);
+  const referralLink = `${window.location.origin}${window.location.pathname}?ref=${sessionId}`;
+
+  useEffect(() => {
+    captureReferrer(sessionId);
+  }, [sessionId]);
+
+  const loadReferralStats = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/session/${sessionId}/referrals`);
+      if (res.ok) setReferralStats(await res.json());
+    } catch (err) {
+      console.error("Referral stats load error:", err);
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    loadReferralStats();
+    const interval = setInterval(loadReferralStats, 20000);
+    return () => clearInterval(interval);
+  }, [loadReferralStats]);
+
+  function copyReferralLink() {
+    navigator.clipboard.writeText(referralLink);
+    setRefLinkCopied(true);
+    setTimeout(() => setRefLinkCopied(false), 2000);
+  }
 
   // ==================== АККАУНТ (email+пароль — для восстановления sessionId) ====================
   // authMode: "login" | "register" | "forgot" (запрос кода) | "reset" (код + новый пароль)
@@ -383,7 +422,7 @@ function App() {
       const res = await fetch(`${API_URL}/api/reserve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, amount }),
+        body: JSON.stringify({ sessionId, amount, refSessionId: localStorage.getItem("coreai_ref_id") || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -896,6 +935,24 @@ function App() {
                 </p>
               </>
             )}
+          </div>
+
+          <div className="card">
+            <h3>Реферальная программа</h3>
+            <p style={{ fontSize: 13 }}>
+              Приведите друга по своей ссылке — получайте {referralStats.referralPercent}% с каждой его оплаты,
+              не только с первой.
+            </p>
+            <div className="row" style={{ marginTop: 10 }}>
+              <input type="text" readOnly value={referralLink} className="ref-link-input" />
+              <button className="btn btn-primary" onClick={copyReferralLink}>
+                {refLinkCopied ? "Скопировано" : "Скопировать"}
+              </button>
+            </div>
+            <div style={{ marginTop: 10, fontSize: 13 }}>
+              Приведено: <strong>{referralStats.referredCount}</strong> · Накоплено к выплате:{" "}
+              <strong>{referralStats.pendingBalance} USDT</strong>
+            </div>
           </div>
 
           <div className="card">
