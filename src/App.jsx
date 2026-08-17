@@ -77,6 +77,77 @@ function App() {
     setTimeout(() => setRefLinkCopied(false), 2000);
   }
 
+  // ==================== БОНУСНЫЙ ПУЛ (само-обслуживание) ====================
+  const [poolStats, setPoolStats] = useState({
+    hasWallet: false,
+    claimableBalance: 0,
+    estimatedToday: 0,
+    canClaimToday: false,
+    minWithdrawal: 1,
+  });
+  const [isPoolClaiming, setIsPoolClaiming] = useState(false);
+  const [isPoolWithdrawing, setIsPoolWithdrawing] = useState(false);
+  const [poolMsg, setPoolMsg] = useState("");
+
+  const loadPoolStats = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/session/${sessionId}/pool`);
+      if (res.ok) setPoolStats(await res.json());
+    } catch (err) {
+      console.error("Pool stats load error:", err);
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    loadPoolStats();
+    const interval = setInterval(loadPoolStats, 20000);
+    return () => clearInterval(interval);
+  }, [loadPoolStats]);
+
+  async function handlePoolClaim() {
+    setIsPoolClaiming(true);
+    setPoolMsg("");
+    try {
+      const res = await fetch(`${API_URL}/api/session/${sessionId}/pool-claim`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setPoolMsg(data.message || data.error || "Не удалось забрать долю");
+      } else if (data.claimed > 0) {
+        setPoolMsg(`Забрано: ${data.claimed} USDT`);
+      } else {
+        setPoolMsg(data.message || "Пока нечего забирать");
+      }
+      await loadPoolStats();
+    } catch (err) {
+      setPoolMsg("Ошибка: " + err.message);
+    } finally {
+      setIsPoolClaiming(false);
+    }
+  }
+
+  async function handlePoolWithdraw() {
+    setIsPoolWithdrawing(true);
+    setPoolMsg("");
+    try {
+      const res = await fetch(`${API_URL}/api/session/${sessionId}/pool-withdraw`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPoolMsg(data.message || data.error || "Не удалось вывести");
+      } else {
+        setPoolMsg(`Выведено: ${data.amount} USDT`);
+      }
+      await loadPoolStats();
+    } catch (err) {
+      setPoolMsg("Ошибка: " + err.message);
+    } finally {
+      setIsPoolWithdrawing(false);
+    }
+  }
+
   // ==================== АККАУНТ (email+пароль — для восстановления sessionId) ====================
   // authMode: "login" | "register" | "forgot" (запрос кода) | "reset" (код + новый пароль)
   const [authEmail, setAuthEmail] = useState(() => localStorage.getItem("coreai_account_email") || "");
@@ -959,6 +1030,49 @@ function App() {
             ) : (
               <p style={{ fontSize: 13 }}>
                 Своя реферальная ссылка появится здесь после регистрации — привяжите email и пароль в блоке «Аккаунт» выше.
+              </p>
+            )}
+          </div>
+
+          <div className="card">
+            <h3>Бонусный пул</h3>
+            {poolStats.hasWallet ? (
+              <>
+                <p style={{ fontSize: 13 }}>
+                  Раз в сутки можно забрать свою долю от того, что упало в общий пул за последние 24 часа —
+                  пропорционально тому, сколько вы всего заплатили.
+                </p>
+                <div className="stats-grid" style={{ marginTop: 10 }}>
+                  <div className="stat">
+                    <div className="stat-label">Доступно к выводу</div>
+                    <div className="stat-value">{poolStats.claimableBalance} USDT</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-label">Оценка на сегодня</div>
+                    <div className="stat-value">{poolStats.estimatedToday} USDT</div>
+                  </div>
+                </div>
+                <div className="row" style={{ marginTop: 10 }}>
+                  <button className="btn btn-primary" onClick={handlePoolClaim} disabled={!poolStats.canClaimToday || isPoolClaiming}>
+                    {isPoolClaiming ? "..." : poolStats.canClaimToday ? "Забрать сегодняшнюю долю" : "Уже забрано сегодня"}
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handlePoolWithdraw}
+                    disabled={poolStats.claimableBalance < poolStats.minWithdrawal || isPoolWithdrawing}
+                  >
+                    {isPoolWithdrawing ? "..." : "Вывести на кошелёк"}
+                  </button>
+                </div>
+                {poolMsg && <p style={{ fontSize: 12, marginTop: 8 }}>{poolMsg}</p>}
+                <p style={{ fontSize: 11, marginTop: 8, color: "var(--text-mute)" }}>
+                  Вывод идёт автоматически на кошелёк, с которого вы платили за подписку. Минимум для вывода —{" "}
+                  {poolStats.minWithdrawal} USDT.
+                </p>
+              </>
+            ) : (
+              <p style={{ fontSize: 13 }}>
+                Появится после первой оплаты подписки — вывод идёт на тот же кошелёк, с которого вы платите.
               </p>
             )}
           </div>
