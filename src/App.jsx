@@ -83,11 +83,27 @@ function App() {
     claimableBalance: 0,
     estimatedToday: 0,
     canClaimToday: false,
+    nextClaimAt: null,
     minWithdrawal: 1,
   });
   const [isPoolClaiming, setIsPoolClaiming] = useState(false);
   const [isPoolWithdrawing, setIsPoolWithdrawing] = useState(false);
   const [poolMsg, setPoolMsg] = useState("");
+  const [nowTick, setNowTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    const tick = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+
+  function formatCountdown(ms) {
+    if (ms <= 0) return "00:00:00";
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
 
   const loadPoolStats = useCallback(async () => {
     try {
@@ -1039,9 +1055,10 @@ function App() {
             {poolStats.hasWallet ? (
               <>
                 <p style={{ fontSize: 13 }}>
-                  Раз в сутки можно забрать свою долю от того, что упало в общий пул за последние 24 часа —
-                  пропорционально тому, сколько вы всего заплатили. Не забрали за сутки — доля достаётся тем, кто
-                  забирает регулярно, не пропадает впустую, но и не копится за вас.
+                  Каждый день до 19:00 по Москве можно забрать свою долю от того, что упало в общий пул —
+                  пропорционально тому, сколько вы всего заплатили. Не успели до дедлайна — доля достаётся тем, кто
+                  забирает регулярно, не пропадает впустую, но и не копится за вас. Понедельник — выходной, ничего
+                  нажимать не нужно, его доля сама объединится со вторником.
                 </p>
                 <div className="stats-grid" style={{ marginTop: 10 }}>
                   <div className="stat">
@@ -1055,7 +1072,13 @@ function App() {
                 </div>
                 <div className="row" style={{ marginTop: 10 }}>
                   <button className="btn btn-primary" onClick={handlePoolClaim} disabled={!poolStats.canClaimToday || isPoolClaiming}>
-                    {isPoolClaiming ? "..." : poolStats.canClaimToday ? "Забрать сегодняшнюю долю" : "Уже забрано сегодня"}
+                    {isPoolClaiming
+                      ? "..."
+                      : poolStats.canClaimToday
+                      ? "Забрать сегодняшнюю долю"
+                      : poolStats.nextClaimAt
+                      ? `Можно через ${formatCountdown(poolStats.nextClaimAt - nowTick)}`
+                      : "Уже забрано"}
                   </button>
                   <button
                     className="btn btn-primary"
