@@ -129,6 +129,7 @@ function App() {
   const [isSettingTopic, setIsSettingTopic] = useState(false);
   const debateMessagesRef = useRef(null);
   const stickToBottomRef = useRef(true);
+  const topicInputRef = useRef(null);
 
   // ==================== ФОН: пинг-понг воспроизведение видео ====================
   // Обычный loop даёт резкий рывок в конце ролика. Вместо этого сами гоним
@@ -248,6 +249,15 @@ function App() {
     if (!el || debateMessages.length === 0) return;
     if (stickToBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [debateMessages]);
+
+  // Тема может быть длинным вопросом — растим textarea под текст вместо
+  // того, чтобы прятать его в однострочном инпуте со скроллом влево.
+  useEffect(() => {
+    const el = topicInputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 220) + "px";
+  }, [topicInput]);
 
   async function handleSetTopic(e) {
     e.preventDefault();
@@ -434,14 +444,21 @@ function App() {
           <div className="debate-hub">
           <div className="chat-panel">
             <form className="chat-input-form topic-form" onSubmit={handleSetTopic}>
-              <input
-                type="text"
-                className="chat-input"
+              <textarea
+                ref={topicInputRef}
+                className="chat-input topic-textarea"
                 placeholder="Впишите тему для обсуждения..."
                 value={topicInput}
                 onChange={(e) => setTopicInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSetTopic(e);
+                  }
+                }}
                 disabled={isSettingTopic}
-                maxLength={200}
+                maxLength={1000}
+                rows={1}
               />
               <button type="submit" className="btn btn-primary" disabled={isSettingTopic || !topicInput.trim()}>
                 {isSettingTopic ? "..." : "Обсудить"}
