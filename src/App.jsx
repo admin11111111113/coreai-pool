@@ -939,20 +939,28 @@ function App() {
 
           <div className="card">
             <h3>Реферальная программа</h3>
-            <p style={{ fontSize: 13 }}>
-              Приведите друга по своей ссылке — получайте {referralStats.referralPercent}% с каждой его оплаты,
-              не только с первой.
-            </p>
-            <div className="row" style={{ marginTop: 10 }}>
-              <input type="text" readOnly value={referralLink} className="ref-link-input" />
-              <button className="btn btn-primary" onClick={copyReferralLink}>
-                {refLinkCopied ? "Скопировано" : "Скопировать"}
-              </button>
-            </div>
-            <div style={{ marginTop: 10, fontSize: 13 }}>
-              Приведено: <strong>{referralStats.referredCount}</strong> · Накоплено к выплате:{" "}
-              <strong>{referralStats.pendingBalance} USDT</strong>
-            </div>
+            {authEmail ? (
+              <>
+                <p style={{ fontSize: 13 }}>
+                  Приведите друга по своей ссылке — получайте {referralStats.referralPercent}% с каждой его оплаты,
+                  не только с первой.
+                </p>
+                <div className="row" style={{ marginTop: 10 }}>
+                  <input type="text" readOnly value={referralLink} className="ref-link-input" />
+                  <button className="btn btn-primary" onClick={copyReferralLink}>
+                    {refLinkCopied ? "Скопировано" : "Скопировать"}
+                  </button>
+                </div>
+                <div style={{ marginTop: 10, fontSize: 13 }}>
+                  Приведено: <strong>{referralStats.referredCount}</strong> · Накоплено к выплате:{" "}
+                  <strong>{referralStats.pendingBalance} USDT</strong>
+                </div>
+              </>
+            ) : (
+              <p style={{ fontSize: 13 }}>
+                Своя реферальная ссылка появится здесь после регистрации — привяжите email и пароль в блоке «Аккаунт» выше.
+              </p>
+            )}
           </div>
 
           <div className="card">
