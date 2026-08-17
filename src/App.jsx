@@ -85,6 +85,9 @@ function App() {
     canClaimToday: false,
     nextClaimAt: null,
     minWithdrawal: 1,
+    dailyLimit: 0,
+    usedToday: 0,
+    usageMultiplier: 100,
   });
   const [isPoolClaiming, setIsPoolClaiming] = useState(false);
   const [isPoolWithdrawing, setIsPoolWithdrawing] = useState(false);
@@ -1070,6 +1073,12 @@ function App() {
                     <div className="stat-value">{poolStats.estimatedToday} USDT</div>
                   </div>
                 </div>
+                {poolStats.dailyLimit > 0 && (
+                  <p style={{ fontSize: 11, marginTop: 8, color: "var(--text-mute)" }}>
+                    Использовано запросов к ИИ сегодня: {poolStats.usedToday} из {poolStats.dailyLimit} — бонус ×
+                    {poolStats.usageMultiplier}%. Чем меньше расходуете лимит, тем больше бонус.
+                  </p>
+                )}
                 <div className="row" style={{ marginTop: 10 }}>
                   <button className="btn btn-primary" onClick={handlePoolClaim} disabled={!poolStats.canClaimToday || isPoolClaiming}>
                     {isPoolClaiming
